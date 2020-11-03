@@ -1,0 +1,12 @@
+﻿  compilation object save succeeded; see C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\Debug\PixelShader.cso
+  compilation object save succeeded; see C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\Debug\VertexShader.cso
+  Application.cpp
+  DXSample.cpp
+  Game.cpp
+  Main.cpp
+  Generating Code...
+DXSample.obj : error LNK2019: unresolved external symbol "public: virtual __thiscall DXSample::~DXSample(void)" (??1DXSample@@UAE@XZ) referenced in function "public: virtual void * __thiscall DXSample::`scalar deleting destructor'(unsigned int)" (??_GDXSample@@UAEPAXI@Z)
+Game.obj : error LNK2001: unresolved external symbol "public: virtual __thiscall DXSample::~DXSample(void)" (??1DXSample@@UAE@XZ)
+Main.obj : error LNK2001: unresolved external symbol "public: virtual __thiscall DXSample::~DXSample(void)" (??1DXSample@@UAE@XZ)
+MSVCRTD.lib(exe_main.obj) : error LNK2019: unresolved external symbol _main referenced in function "int __cdecl invoke_main(void)" (?invoke_main@@YAHXZ)
+C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\Debug\DX12EngineDemo.exe : fatal error LNK1120: 2 unresolved externals
