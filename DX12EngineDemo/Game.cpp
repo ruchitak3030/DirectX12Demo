@@ -170,41 +170,44 @@ void Game::LoadPipeline()
     }
 
     // Create depth stencil buffer and view
-    CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
+    {
 
-    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-    dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
-    dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-    dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+        CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
 
-    D3D12_CLEAR_VALUE optClear = {};
-    optClear.Format = DXGI_FORMAT_D32_FLOAT;
-    optClear.DepthStencil.Depth = 1.0f;
-    optClear.DepthStencil.Stencil = 0;
-    
-    ThrowIfFailed(m_device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-        D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC::Tex2D(
-            DXGI_FORMAT_D32_FLOAT,
-            m_width,
-            m_height,
-            1,
-            1,
-            1,
-            0,
-            D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
-        D3D12_RESOURCE_STATE_DEPTH_WRITE,
-        &optClear,
-        IID_PPV_ARGS(&m_depthStencilBuffer)));
+        D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+        dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+        dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+        dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
 
-    D3D12_DEPTH_STENCIL_DESC depthDesc = {};
-    depthDesc.DepthEnable = TRUE;
-    depthDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-    depthDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-    depthDesc.StencilEnable = FALSE;
+        D3D12_CLEAR_VALUE optClear = {};
+        optClear.Format = DXGI_FORMAT_D32_FLOAT;
+        optClear.DepthStencil.Depth = 1.0f;
+        optClear.DepthStencil.Stencil = 0;
 
-    m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), &dsvDesc, dsvHandle);
+        ThrowIfFailed(m_device->CreateCommittedResource(
+            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+            D3D12_HEAP_FLAG_NONE,
+            &CD3DX12_RESOURCE_DESC::Tex2D(
+                DXGI_FORMAT_D32_FLOAT,
+                m_width,
+                m_height,
+                1,
+                1,
+                1,
+                0,
+                D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+            D3D12_RESOURCE_STATE_DEPTH_WRITE,
+            &optClear,
+            IID_PPV_ARGS(&m_depthStencilBuffer)));
+
+        D3D12_DEPTH_STENCIL_DESC depthDesc = {};
+        depthDesc.DepthEnable = TRUE;
+        depthDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+        depthDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+        depthDesc.StencilEnable = FALSE;
+
+        m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), &dsvDesc, dsvHandle);
+    }
 
     ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
 
@@ -295,14 +298,22 @@ void Game::LoadAssets()
 
     // Define Geometry
     {
-        Vertex triangleVertices[] =
+        Vertex cubeVertices[] =
         {
             { { 0.0f, 0.25f * m_aspectRatio, 0.0f }, XMFLOAT4(DirectX::Colors::Red) },
             { { 0.25f, -0.25f * m_aspectRatio, 0.0f }, XMFLOAT4(DirectX::Colors::Blue) },
             { { -0.25f, -0.25f * m_aspectRatio, 0.0f }, XMFLOAT4(DirectX::Colors::Green) }
+            /*{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(DirectX::Colors::White) },
+            { XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(DirectX::Colors::Black) },
+            { XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(DirectX::Colors::Red) },
+            { XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(DirectX::Colors::Green) },
+            { XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Blue) },
+            { XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Yellow) },
+            { XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Cyan) },
+            { XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Magenta) }*/
         };
 
-        const UINT vertexBufferSize = sizeof(triangleVertices);
+        const UINT vertexBufferSize = sizeof(cubeVertices);
 
         // TODO: Move this to use Default heap since the vertices will be static
         ThrowIfFailed(m_device->CreateCommittedResource(
@@ -317,12 +328,62 @@ void Game::LoadAssets()
         UINT8* pVertexDataBegin;
         CD3DX12_RANGE readRange(0, 0);
         ThrowIfFailed(m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-        memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
+        memcpy(pVertexDataBegin, cubeVertices, sizeof(cubeVertices));
         m_vertexBuffer->Unmap(0, nullptr);
 
         m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
         m_vertexBufferView.SizeInBytes = vertexBufferSize;
         m_vertexBufferView.StrideInBytes = sizeof(Vertex);
+
+        DWORD indices[] =
+        {
+            0, 1, 2
+            // front face
+           /* 0, 1, 2,
+            0, 2, 3,
+
+            // back face
+            4, 6, 5,
+            4, 7, 6,
+
+            // left face
+            4, 5, 1,
+            4, 1, 0,
+
+            // right face
+            3, 2, 6,
+            3, 6, 7,
+
+            // top face
+            1, 5, 6,
+            1, 6, 2,
+
+            // bottom face
+            4, 0, 3,
+            4, 3, 7*/
+        };
+
+        const UINT indexBufferSize = sizeof(indices);
+
+        // TODO: Change this to use upload heap to transfer data to default heap
+        ThrowIfFailed(m_device->CreateCommittedResource(
+            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+            D3D12_HEAP_FLAG_NONE,
+            &CD3DX12_RESOURCE_DESC::Buffer(indexBufferSize),
+            D3D12_RESOURCE_STATE_GENERIC_READ,
+            nullptr,
+            IID_PPV_ARGS(&m_indexBuffer)));
+
+        // Copy the traingle data to the vertex buffer
+        UINT8* pIndexDataBegin;
+        CD3DX12_RANGE indexReadRange(0, 0);
+        ThrowIfFailed(m_indexBuffer->Map(0, &indexReadRange, reinterpret_cast<void**>(&pIndexDataBegin)));
+        memcpy(pIndexDataBegin, indices, sizeof(indices));
+        m_indexBuffer->Unmap(0, nullptr);
+
+        m_indexBufferView.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
+        m_indexBufferView.SizeInBytes = indexBufferSize;
+        m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 
     }
 
@@ -391,7 +452,8 @@ void Game::PopulateCommandList()
     m_commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH , 1.0f, 0, 0, nullptr);
     m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
-    m_commandList->DrawInstanced(3, 1, 0, 0);
+    m_commandList->IASetIndexBuffer(&m_indexBufferView);
+    m_commandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
 
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
     
