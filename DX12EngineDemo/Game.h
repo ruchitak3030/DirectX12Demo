@@ -19,7 +19,8 @@ private:
 	static const UINT FrameCount = 2;
     struct SceneConstantBuffer
     {
-        XMFLOAT4 offset;
+        //XMFLOAT4 offset;
+        XMFLOAT4X4 WorldViewProj;
     };
 
     // Pipeline objects.
@@ -54,6 +55,11 @@ private:
     HANDLE m_fenceEvent;
     ComPtr<ID3D12Fence> m_fence;
     UINT64 m_fenceValue = 0;
+
+    // Matrices
+    XMFLOAT4X4 m_worldMatrix;
+    XMFLOAT4X4 m_viewMatrix;
+    XMFLOAT4X4 m_projMatrix;
 
     void LoadPipeline();
     void LoadAssets();

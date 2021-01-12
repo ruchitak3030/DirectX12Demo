@@ -22,14 +22,38 @@ void Game::Init()
 
 void Game::Update()
 {
-    const float translationSpeed = 0.005f;
+    /*const float translationSpeed = 0.005f;
     const float offsetBounds = 1.25f;
-
     m_constantBufferData.offset.x += translationSpeed;
     if (m_constantBufferData.offset.x > offsetBounds)
     {
         m_constantBufferData.offset.x = -offsetBounds;
-    }
+    }*/
+
+    XMMATRIX world = XMMatrixIdentity();
+    XMStoreFloat4x4(&m_worldMatrix, world);
+
+    // Build view matrix
+    XMVECTOR pos = XMVectorSet(0, 0, -10.0f, -1.0f);
+    XMVECTOR target = XMVectorZero();
+    XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+    XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
+    XMStoreFloat4x4(&m_viewMatrix, view);
+
+    //Build projection Matrix
+    XMMATRIX proj = XMMatrixPerspectiveFovLH(
+        XM_PIDIV4,
+        m_aspectRatio,
+        1.0f, 1000.0f);
+
+    XMStoreFloat4x4(&m_projMatrix, proj);
+
+    //Build MVP and upload to constant Buffer
+    XMMATRIX worldViewProj = world * view * proj;
+
+    //Update constant buffer with latest world-view-proj matrix.
+    XMStoreFloat4x4(&m_constantBufferData.WorldViewProj, XMMatrixTranspose(worldViewProj));
     memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));
 }
 
@@ -225,6 +249,7 @@ void Game::LoadAssets()
             featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
         }
 
+        // Create single descriptor table of CBVs.
         CD3DX12_DESCRIPTOR_RANGE1 ranges[1] = {};
         ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 
@@ -238,6 +263,7 @@ void Game::LoadAssets()
             D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
             D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 
+        // Create a root signature with a single slot which points to the root parameter which consists of single descriptor table as the range.
         CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
         rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 0, nullptr, rootSignatureFlags);
 
@@ -300,17 +326,17 @@ void Game::LoadAssets()
     {
         Vertex cubeVertices[] =
         {
-            { { 0.0f, 0.25f * m_aspectRatio, 0.0f }, XMFLOAT4(DirectX::Colors::Red) },
+            /*{ { 0.0f, 0.25f * m_aspectRatio, 0.0f }, XMFLOAT4(DirectX::Colors::Red) },
             { { 0.25f, -0.25f * m_aspectRatio, 0.0f }, XMFLOAT4(DirectX::Colors::Blue) },
-            { { -0.25f, -0.25f * m_aspectRatio, 0.0f }, XMFLOAT4(DirectX::Colors::Green) }
-            /*{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(DirectX::Colors::White) },
+            { { -0.25f, -0.25f * m_aspectRatio, 0.0f }, XMFLOAT4(DirectX::Colors::Green) }*/
+            { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(DirectX::Colors::White) },
             { XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(DirectX::Colors::Black) },
             { XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(DirectX::Colors::Red) },
             { XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(DirectX::Colors::Green) },
             { XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Blue) },
             { XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Yellow) },
             { XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Cyan) },
-            { XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Magenta) }*/
+            { XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Magenta) }
         };
 
         const UINT vertexBufferSize = sizeof(cubeVertices);
@@ -337,9 +363,9 @@ void Game::LoadAssets()
 
         DWORD indices[] =
         {
-            0, 1, 2
+            //0, 1, 2
             // front face
-           /* 0, 1, 2,
+            0, 1, 2,
             0, 2, 3,
 
             // back face
@@ -360,7 +386,7 @@ void Game::LoadAssets()
 
             // bottom face
             4, 0, 3,
-            4, 3, 7*/
+            4, 3, 7
         };
 
         const UINT indexBufferSize = sizeof(indices);
@@ -453,7 +479,7 @@ void Game::PopulateCommandList()
     m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
     m_commandList->IASetIndexBuffer(&m_indexBufferView);
-    m_commandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+    m_commandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
     

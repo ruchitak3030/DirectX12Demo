@@ -1,8 +1,2 @@
-﻿  Performing Custom Build Tools
-  Performing Custom Build Tools
-  Application.cpp
-  DXSample.cpp
-  Game.cpp
-  Main.cpp
-  Generating Code...
+﻿  Game.cpp
   DX12EngineDemo.vcxproj -> C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\x64\Debug\DX12EngineDemo.exe

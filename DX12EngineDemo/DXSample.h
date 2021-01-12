@@ -22,6 +22,8 @@ public:
 	UINT GetHeight() const { return m_height; }
 	const WCHAR* GetTitle() const { return m_title.c_str(); }
 
+	void UpdateTimer();
+
 protected:
 	std::wstring GetAssetFullPath(LPCWSTR assetName);
 	void GetHardwareAdapter(_In_ IDXGIFactory2* pFactory, _Outptr_result_maybenull_ IDXGIAdapter1** ppAdapter);
@@ -41,5 +43,15 @@ private:
 
 	// Window title.
 	std::wstring m_title;
+
+
+	// Timer related stuff
+	double m_perfCounterSeconds;
+	float m_totalTime;
+	float m_deltaTime;
+	__int64 m_startTime;
+	__int64 m_currentTime;
+	__int64 m_previousTime;
+
 };
 

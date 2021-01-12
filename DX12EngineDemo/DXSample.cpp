@@ -16,10 +16,34 @@ DXSample::DXSample(UINT width, UINT height, std::wstring name) :
 	m_assetsPath = assetsPath;
 
 	m_aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+
+	__int64 now;
+	QueryPerformanceCounter((LARGE_INTEGER*)&now);
+	m_startTime = now;
+	m_currentTime = now;
+	m_previousTime = now;
 }
 
 DXSample::~DXSample()
 {
+}
+
+void DXSample::UpdateTimer()
+{
+	// Grab the current time
+	__int64 now;
+	QueryPerformanceCounter((LARGE_INTEGER*)&now);
+	m_currentTime = now;
+
+	// Calculate the delta time and clamp to zero
+	m_deltaTime = max((float)((m_currentTime - m_previousTime) * m_perfCounterSeconds), 0.0f);
+
+	// Calcuate total time from start to now
+	m_totalTime = (float)((m_currentTime - m_startTime) * m_perfCounterSeconds);
+
+	// Save the current time for next frame
+	m_previousTime = m_currentTime;
+	
 }
 
 std::wstring DXSample::GetAssetFullPath(LPCWSTR assetName)

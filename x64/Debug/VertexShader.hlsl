@@ -1,6 +1,6 @@
 cbuffer SceneConstantBuffer : register(b0)
 {
-	float4 offset;
+	float4x4 worldViewProj;
 };
 
 struct VertexInput
@@ -18,7 +18,7 @@ struct VertexToPixel
 VertexToPixel main(VertexInput input)
 {
 	VertexToPixel output;
-	output.position = input.position + offset;
+	output.position = mul(input.position, worldViewProj);
 	output.color = input.color;
 
 	return output;

@@ -58,11 +58,11 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="VertexShader.hlsl">
+    <CustomBuild Include="PixelShader.hlsl">
       <Filter>Assets\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="PixelShader.hlsl">
+    </CustomBuild>
+    <CustomBuild Include="VertexShader.hlsl">
       <Filter>Assets\Shaders</Filter>
-    </FxCompile>
+    </CustomBuild>
   </ItemGroup>
 </Project>

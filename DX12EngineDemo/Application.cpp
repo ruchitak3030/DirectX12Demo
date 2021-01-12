@@ -87,6 +87,8 @@ LRESULT Application::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     case WM_PAINT:
         if (pSample)
         {
+            pSample->UpdateTimer();
+
             pSample->Update();
             pSample->Render();
         }
@@ -100,3 +102,4 @@ LRESULT Application::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     // Handle any messages the switch statement didn't.
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
+
