@@ -1,6 +1,7 @@
 #pragma once
 #include "DXSample.h"
 #include "Vertex.h"
+#include "Mesh.h"
 
 using namespace DirectX;
 
@@ -9,6 +10,7 @@ class Game : public DXSample
 {
 public:
 	Game(HINSTANCE hInstance);
+    ~Game();
 
 	virtual void Init();
 	void Update(float deltaTime, float totalTime);
@@ -35,10 +37,6 @@ private:
     ComPtr<ID3D12PipelineState> m_pipelineState;
 
     // App resources.
-    ComPtr<ID3D12Resource> m_vertexBuffer;
-    D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
-    ComPtr<ID3D12Resource> m_indexBuffer;
-    D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
     ComPtr<ID3D12Resource> m_constantBuffer;
     SceneConstantBuffer m_constantBufferData;
     UINT8* m_pCbvDataBegin;
@@ -62,7 +60,10 @@ private:
     void CreateRootSignature();
     void CreatePSO();
     void PopulateCommandList();
+
     
+    Mesh* triangleMesh;
+    int triangleIndexCount;
 
 };
 

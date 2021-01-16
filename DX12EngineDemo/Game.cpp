@@ -15,6 +15,11 @@ Game::Game(HINSTANCE hInstance) :
 {
 }
 
+Game::~Game()
+{
+    delete triangleMesh;
+}
+
 void Game::Init()
 {
     LoadShaders();
@@ -51,6 +56,7 @@ void Game::Render(float deltaTime, float totalTime)
 
     // Present the frame
     ThrowIfFailed(m_swapChain->Present(1, 0));
+
     WaitForPreviousFrame();
 }
 
@@ -270,8 +276,27 @@ void Game::LoadShaders()
     UINT compileFlags = 0;
 #endif
 
-    ThrowIfFailed(D3DCompileFromFile(GetAssetFullPath(L"VertexShader.hlsl").c_str(), nullptr, nullptr, "main", "vs_5_0", compileFlags, 0, &m_vertexShader, nullptr));
-    ThrowIfFailed(D3DCompileFromFile(GetAssetFullPath(L"PixelShader.hlsl").c_str(), nullptr, nullptr, "main", "ps_5_0", compileFlags, 0, &m_pixelShader, nullptr));
+    ThrowIfFailed(D3DCompileFromFile(
+        GetAssetFullPath(L"VertexShader.hlsl").c_str(), 
+        nullptr, 
+        nullptr, 
+        "main",
+        "vs_5_0", 
+        compileFlags, 
+        0, 
+        &m_vertexShader, 
+        nullptr));
+
+    ThrowIfFailed(D3DCompileFromFile(
+        GetAssetFullPath(L"PixelShader.hlsl").c_str(), 
+        nullptr, 
+        nullptr, 
+        "main", 
+        "ps_5_0", 
+        compileFlags,
+        0,
+        &m_pixelShader,
+        nullptr));
 }
 
 void Game::CreateMatrices()
@@ -280,7 +305,7 @@ void Game::CreateMatrices()
     XMStoreFloat4x4(&m_worldMatrix, world);
 
     // Build view matrix
-    XMVECTOR pos = XMVectorSet(0, 0, -10.0f, -1.0f);
+    XMVECTOR pos = XMVectorSet(0, 0, -5.0f, -1.0f);
     XMVECTOR target = XMVectorZero();
     XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
@@ -316,29 +341,9 @@ void Game::CreateBasicGeometry()
         { XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Magenta) }*/
     };
 
-    const UINT vertexBufferSize = sizeof(cubeVertices);
+    int numVertices = sizeof(cubeVertices)/sizeof(cubeVertices[0]);
 
-    // TODO: Move this to use Default heap since the vertices will be static
-    ThrowIfFailed(m_device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-        D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
-        D3D12_RESOURCE_STATE_GENERIC_READ,
-        nullptr,
-        IID_PPV_ARGS(&m_vertexBuffer)));
-
-    // Copy the traingle data to the vertex buffer
-    UINT8* pVertexDataBegin;
-    CD3DX12_RANGE readRange(0, 0);
-    ThrowIfFailed(m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-    memcpy(pVertexDataBegin, cubeVertices, sizeof(cubeVertices));
-    m_vertexBuffer->Unmap(0, nullptr);
-
-    m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-    m_vertexBufferView.SizeInBytes = vertexBufferSize;
-    m_vertexBufferView.StrideInBytes = sizeof(Vertex);
-
-    DWORD indices[] =
+    int indices[] =
     {
         0, 1, 2
         /*// front face
@@ -366,28 +371,11 @@ void Game::CreateBasicGeometry()
         4, 3, 7*/
     };
 
-    const UINT indexBufferSize = sizeof(indices);
+    int numIndices = sizeof(indices)/sizeof(indices[0]);
 
-    // TODO: Change this to use upload heap to transfer data to default heap
-    ThrowIfFailed(m_device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-        D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC::Buffer(indexBufferSize),
-        D3D12_RESOURCE_STATE_GENERIC_READ,
-        nullptr,
-        IID_PPV_ARGS(&m_indexBuffer)));
-
-    // Copy the traingle data to the vertex buffer
-    UINT8* pIndexDataBegin;
-    CD3DX12_RANGE indexReadRange(0, 0);
-    ThrowIfFailed(m_indexBuffer->Map(0, &indexReadRange, reinterpret_cast<void**>(&pIndexDataBegin)));
-    memcpy(pIndexDataBegin, indices, sizeof(indices));
-    m_indexBuffer->Unmap(0, nullptr);
-
-    m_indexBufferView.BufferLocation = m_indexBuffer->GetGPUVirtualAddress();
-    m_indexBufferView.SizeInBytes = indexBufferSize;
-    m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
-
+    triangleMesh = new Mesh(cubeVertices, indices, numVertices, numIndices, m_device);
+    triangleIndexCount = triangleMesh->m_indexCount;
+   
     // Create constant buffer view
     {
         ThrowIfFailed(m_device->CreateCommittedResource(
@@ -500,14 +488,14 @@ void Game::PopulateCommandList()
 
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
     CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
-    m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
 
     m_commandList->ClearRenderTargetView(rtvHandle, Colors::CornflowerBlue, 0, nullptr);
     m_commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH , 1.0f, 0, 0, nullptr);
+    m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
     m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
-    m_commandList->IASetIndexBuffer(&m_indexBufferView);
-    m_commandList->DrawIndexedInstanced(3, 1, 0, 0, 0);
+    m_commandList->IASetVertexBuffers(0, 1, &triangleMesh->GetVertexBufferView());
+    m_commandList->IASetIndexBuffer(&triangleMesh->GetIndexBufferView());
+    m_commandList->DrawIndexedInstanced(triangleIndexCount, 1, 0, 0, 0);
 
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
     
