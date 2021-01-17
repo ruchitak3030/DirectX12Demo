@@ -28,8 +28,9 @@ private:
 	
     struct SceneConstantBuffer
     {
-        //XMFLOAT4 offset;
-        XMFLOAT4X4 WorldViewProj;
+        XMFLOAT4X4 worldMatrix;
+        XMFLOAT4X4 viewMatrix;
+        XMFLOAT4X4 projMatrix;
     };
 
     // Pipeline objects.   
@@ -64,6 +65,9 @@ private:
     
     Mesh* triangleMesh;
     int triangleIndexCount;
+
+    Mesh* sphereMesh;
+    int sphereIndexCount;
 
 };
 

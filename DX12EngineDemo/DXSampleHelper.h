@@ -36,17 +36,12 @@ inline void GetAssetsPath(_Out_writes_(pathSize) WCHAR* path, UINT pathSize)
     {
         throw std::exception();
     }
-
-    DWORD size = GetModuleFileName(nullptr, path, pathSize);
+   
+    DWORD size = GetCurrentDirectory(pathSize, path);
     if (size == 0 || size == pathSize)
     {
         // Method failed or path was truncated.
         throw std::exception();
     }
 
-    WCHAR* lastSlash = wcsrchr(path, L'\\');
-    if (lastSlash)
-    {
-        *(lastSlash + 1) = L'\0';
-    }
 }

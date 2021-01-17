@@ -40,10 +40,12 @@ void Game::Update(float deltaTime, float totalTime)
     }*/
 
     //Build MVP and upload to constant Buffer
-    XMMATRIX worldViewProj = XMLoadFloat4x4(&m_worldMatrix) * XMLoadFloat4x4(&m_viewMatrix) * XMLoadFloat4x4(&m_projMatrix);
+    //XMMATRIX worldViewProj = XMLoadFloat4x4(&m_worldMatrix) * XMLoadFloat4x4(&m_viewMatrix) * XMLoadFloat4x4(&m_projMatrix);
 
     //Update constant buffer with latest world-view-proj matrix.
-    XMStoreFloat4x4(&m_constantBufferData.WorldViewProj, XMMatrixTranspose(worldViewProj));
+    XMStoreFloat4x4(&m_constantBufferData.worldMatrix, XMMatrixTranspose(XMLoadFloat4x4(&m_worldMatrix)));
+    XMStoreFloat4x4(&m_constantBufferData.viewMatrix, XMMatrixTranspose(XMLoadFloat4x4(&m_viewMatrix)));
+    XMStoreFloat4x4(&m_constantBufferData.projMatrix, XMMatrixTranspose(XMLoadFloat4x4(&m_projMatrix)));
     memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));
 }
 
@@ -277,7 +279,7 @@ void Game::LoadShaders()
 #endif
 
     ThrowIfFailed(D3DCompileFromFile(
-        GetAssetFullPath(L"VertexShader.hlsl").c_str(), 
+        GetAssetFullPath(L"//Shaders//VertexShader.hlsl").c_str(), 
         nullptr, 
         nullptr, 
         "main",
@@ -288,7 +290,7 @@ void Game::LoadShaders()
         nullptr));
 
     ThrowIfFailed(D3DCompileFromFile(
-        GetAssetFullPath(L"PixelShader.hlsl").c_str(), 
+        GetAssetFullPath(L"//Shaders//PixelShader.hlsl").c_str(), 
         nullptr, 
         nullptr, 
         "main", 
@@ -325,57 +327,11 @@ void Game::CreateMatrices()
 
 void Game::CreateBasicGeometry()
 {
+    char sphereAsset[128];
+    int ret = wcstombs(sphereAsset, GetAssetFullPath(L"//Assets//sphere.obj").c_str(), sizeof(sphereAsset));
+    sphereMesh = new Mesh(sphereAsset, m_device);
+    sphereIndexCount = sphereMesh->m_indexCount;
 
-    Vertex cubeVertices[] =
-    {
-        { { 0.0f, 0.25f * m_aspectRatio, 0.0f }, XMFLOAT4(DirectX::Colors::Red) },
-        { { 0.25f, -0.25f * m_aspectRatio, 0.0f }, XMFLOAT4(DirectX::Colors::Blue) },
-        { { -0.25f, -0.25f * m_aspectRatio, 0.0f }, XMFLOAT4(DirectX::Colors::Green) }
-        /*{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(DirectX::Colors::White) },
-        { XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(DirectX::Colors::Black) },
-        { XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(DirectX::Colors::Red) },
-        { XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(DirectX::Colors::Green) },
-        { XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Blue) },
-        { XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Yellow) },
-        { XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Cyan) },
-        { XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Magenta) }*/
-    };
-
-    int numVertices = sizeof(cubeVertices)/sizeof(cubeVertices[0]);
-
-    int indices[] =
-    {
-        0, 1, 2
-        /*// front face
-        0, 1, 2,
-        0, 2, 3,
-
-        // back face
-        4, 6, 5,
-        4, 7, 6,
-
-        // left face
-        4, 5, 1,
-        4, 1, 0,
-
-        // right face
-        3, 2, 6,
-        3, 6, 7,
-
-        // top face
-        1, 5, 6,
-        1, 6, 2,
-
-        // bottom face
-        4, 0, 3,
-        4, 3, 7*/
-    };
-
-    int numIndices = sizeof(indices)/sizeof(indices[0]);
-
-    triangleMesh = new Mesh(cubeVertices, indices, numVertices, numIndices, m_device);
-    triangleIndexCount = triangleMesh->m_indexCount;
-   
     // Create constant buffer view
     {
         ThrowIfFailed(m_device->CreateCommittedResource(
@@ -441,7 +397,8 @@ void Game::CreatePSO()
     D3D12_INPUT_ELEMENT_DESC inputElementDesc[] =
     {
         {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-        {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+        {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
     };
 
     // Describe and create graphics pipeline object (PSO)
@@ -484,7 +441,6 @@ void Game::PopulateCommandList()
 
     // Indicate the back buffer will be used as render target
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-    //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_depthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
 
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
     CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
@@ -493,9 +449,9 @@ void Game::PopulateCommandList()
     m_commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH , 1.0f, 0, 0, nullptr);
     m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
     m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_commandList->IASetVertexBuffers(0, 1, &triangleMesh->GetVertexBufferView());
-    m_commandList->IASetIndexBuffer(&triangleMesh->GetIndexBufferView());
-    m_commandList->DrawIndexedInstanced(triangleIndexCount, 1, 0, 0, 0);
+    m_commandList->IASetVertexBuffers(0, 1, &sphereMesh->GetVertexBufferView());
+    m_commandList->IASetIndexBuffer(&sphereMesh->GetIndexBufferView());
+    m_commandList->DrawIndexedInstanced(sphereIndexCount, 1, 0, 0, 0);
 
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
     

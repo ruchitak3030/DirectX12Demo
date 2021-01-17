@@ -11,6 +11,7 @@ class Mesh
 {
 public:
 	Mesh(Vertex* vertices, int* indices, int numVertices, int numIndices, ComPtr<ID3D12Device> device);
+	Mesh(const char* objFile, ComPtr<ID3D12Device> device);
 	~Mesh();
 
 	UINT m_indexCount;
@@ -24,6 +25,8 @@ private:
 	D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
 	ComPtr<ID3D12Resource> m_indexBuffer;
 	D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
+
+	void CreateBuffers(Vertex* vertices, int* indices, int numVertices, int numIndices, ComPtr<ID3D12Device> device);
 
 };
 
