@@ -1,4 +1,0 @@
-^C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\PIXELSHADER.HLSL
-copy PixelShader.hlsl "C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\x64\Debug\" > NUL
-^C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\VERTEXSHADER.HLSL
-copy VertexShader.hlsl "C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\x64\Debug\" > NUL

@@ -30,7 +30,13 @@
     <ClCompile Include="DXSample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Application.cpp">
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GameEntity.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -47,21 +53,27 @@
     <ClInclude Include="DXSample.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Application.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DXSampleHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Vertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEntity.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="PixelShader.hlsl">
+    <CustomBuild Include="Shaders\VertexShader.hlsl">
       <Filter>Assets\Shaders</Filter>
     </CustomBuild>
-    <CustomBuild Include="VertexShader.hlsl">
+    <CustomBuild Include="Shaders\PixelShader.hlsl">
       <Filter>Assets\Shaders</Filter>
     </CustomBuild>
   </ItemGroup>
