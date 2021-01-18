@@ -2,6 +2,8 @@
 #include "DXSample.h"
 #include "Vertex.h"
 #include "Mesh.h"
+#include "Camera.h"
+#include "GameEntity.h"
 
 using namespace DirectX;
 
@@ -62,12 +64,9 @@ private:
     void CreatePSO();
     void PopulateCommandList();
 
-    
-    Mesh* triangleMesh;
-    int triangleIndexCount;
-
     Mesh* sphereMesh;
     int sphereIndexCount;
-
+    GameEntity* sphereEntity;
+    Camera* camera;
 };
 

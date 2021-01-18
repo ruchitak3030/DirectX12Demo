@@ -17,7 +17,9 @@ Game::Game(HINSTANCE hInstance) :
 
 Game::~Game()
 {
-    delete triangleMesh;
+    delete sphereEntity;
+    delete sphereMesh;
+    delete camera;
 }
 
 void Game::Init()
@@ -31,21 +33,13 @@ void Game::Init()
 
 void Game::Update(float deltaTime, float totalTime)
 {
-    /*const float translationSpeed = 0.005f;
-    const float offsetBounds = 1.25f;
-    m_constantBufferData.offset.x += translationSpeed;
-    if (m_constantBufferData.offset.x > offsetBounds)
-    {
-        m_constantBufferData.offset.x = -offsetBounds;
-    }*/
-
-    //Build MVP and upload to constant Buffer
-    //XMMATRIX worldViewProj = XMLoadFloat4x4(&m_worldMatrix) * XMLoadFloat4x4(&m_viewMatrix) * XMLoadFloat4x4(&m_projMatrix);
+    camera->Update(deltaTime);
+    sphereEntity->UpdateWorldMatrix();
 
     //Update constant buffer with latest world-view-proj matrix.
-    XMStoreFloat4x4(&m_constantBufferData.worldMatrix, XMMatrixTranspose(XMLoadFloat4x4(&m_worldMatrix)));
-    XMStoreFloat4x4(&m_constantBufferData.viewMatrix, XMMatrixTranspose(XMLoadFloat4x4(&m_viewMatrix)));
-    XMStoreFloat4x4(&m_constantBufferData.projMatrix, XMMatrixTranspose(XMLoadFloat4x4(&m_projMatrix)));
+    XMStoreFloat4x4(&m_constantBufferData.worldMatrix, XMLoadFloat4x4(sphereEntity->GetWorldMatrix()));
+    XMStoreFloat4x4(&m_constantBufferData.viewMatrix, XMLoadFloat4x4(&camera->GetViewMatrix()));
+    XMStoreFloat4x4(&m_constantBufferData.projMatrix, XMLoadFloat4x4(&camera->GetProjectionMatrix()));
     memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));
 }
 
@@ -72,200 +66,11 @@ void Game::OnResize()
 {
     DXSample::OnResize();
 
-    XMMATRIX proj = XMMatrixPerspectiveFovLH(
-        XM_PIDIV4,
-        m_aspectRatio,
-        1.0f,
-        1000.0f);
-
-    XMStoreFloat4x4(&m_projMatrix, proj);
+    if (camera)
+    {
+        camera->UpdateProjectionMatrix(m_aspectRatio);
+    }
 }
-
-void Game::OnMouseDown(WPARAM buttonState, int x, int y)
-{
-    m_prevMousePos.x = x;
-    m_prevMousePos.y = y;
-
-    SetCapture(m_hWnd);
-}
-
-void Game::OnMouseUp(WPARAM buttonState, int x, int y)
-{
-    ReleaseCapture();
-}
-
-void Game::OnMouseMove(WPARAM buttonState, int x, int y)
-{
-    m_prevMousePos.x = x;
-    m_prevMousePos.y = y;
-}
-
-void Game::OnMouseWheel(WPARAM wheelData, int x, int y)
-{
-}
-
-//void Game::LoadPipeline()
-//{
-//    UINT dxgiFactoryFlags = 0;
-//
-//#if defined(_DEBUG)
-//    // Enable the debug layer
-//    {
-//        ComPtr<ID3D12Debug> debugController;
-//        if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
-//        {
-//            debugController->EnableDebugLayer();
-//
-//            // Enable additional debug layers.
-//            dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
-//        }
-//    }
-//#endif
-//
-//    ComPtr<IDXGIFactory4> factory;
-//    ThrowIfFailed(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory)));
-//
-//    if (m_useWarpDevice)
-//    {
-//        ComPtr<IDXGIAdapter> warpAdapter;
-//        ThrowIfFailed(factory->EnumWarpAdapter(IID_PPV_ARGS(&warpAdapter)));
-//
-//        ThrowIfFailed(D3D12CreateDevice(
-//            warpAdapter.Get(),
-//            D3D_FEATURE_LEVEL_11_0,
-//            IID_PPV_ARGS(&m_device)
-//        ));
-//    }
-//    else
-//    {
-//        ComPtr<IDXGIAdapter1> hardwareAdapter;
-//        GetHardwareAdapter(factory.Get(), &hardwareAdapter);
-//
-//        ThrowIfFailed(D3D12CreateDevice(
-//            hardwareAdapter.Get(),
-//            D3D_FEATURE_LEVEL_11_0,
-//            IID_PPV_ARGS(&m_device)
-//        ));
-//    }
-//
-//    // Describe and create the command queue.
-//    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-//    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-//    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-//
-//    ThrowIfFailed(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
-//
-//    // Describe and create the swap chain.
-//    DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-//    swapChainDesc.BufferCount = FrameCount;
-//    swapChainDesc.Width = m_width;
-//    swapChainDesc.Height = m_height;
-//    swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-//    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-//    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-//    swapChainDesc.SampleDesc.Count = 1;
-//
-//    ComPtr<IDXGISwapChain1> swapChain;
-//    ThrowIfFailed(factory->CreateSwapChainForHwnd(
-//        m_commandQueue.Get(),        // Swap chain needs the queue so that it can force a flush on it.
-//        Application::GetHwnd(),
-//        &swapChainDesc,
-//        nullptr,
-//        nullptr,
-//        &swapChain
-//    ));
-//
-//    // This sample does not support fullscreen transitions.
-//    ThrowIfFailed(factory->MakeWindowAssociation(Application::GetHwnd(), DXGI_MWA_NO_ALT_ENTER));
-//
-//    ThrowIfFailed(swapChain.As(&m_swapChain));
-//    m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
-//
-//    // Create descriptor heaps.
-//    {
-//        // Describe and create a render target view (RTV) descriptor heap.
-//        D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-//        rtvHeapDesc.NumDescriptors = FrameCount;
-//        rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-//        rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-//        ThrowIfFailed(m_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
-//
-//        m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-//
-//        // Describe and create a depth stencil view descriptor heap;
-//        D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
-//        dsvHeapDesc.NumDescriptors = 1;
-//        dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-//        dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-//        ThrowIfFailed(m_device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
-//
-//        m_dsvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-//
-//        // Describe and create a constant buffer view (CBV) descriptor heap.
-//        D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
-//        cbvHeapDesc.NumDescriptors = 1;
-//        cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-//        cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-//        ThrowIfFailed(m_device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_cbvHeap)));
-//    }
-//
-//    // Create frame resources.
-//    {
-//        CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
-//
-//        // Create a RTV for each frame.
-//        for (UINT n = 0; n < FrameCount; n++)
-//        {
-//            ThrowIfFailed(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
-//            m_device->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
-//            rtvHandle.Offset(1, m_rtvDescriptorSize);
-//        }
-//    }
-//
-//    // Create depth stencil buffer and view
-//    {
-//
-//        CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
-//
-//        D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-//        dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
-//        dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-//        dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-//
-//        D3D12_CLEAR_VALUE optClear = {};
-//        optClear.Format = DXGI_FORMAT_D32_FLOAT;
-//        optClear.DepthStencil.Depth = 1.0f;
-//        optClear.DepthStencil.Stencil = 0;
-//
-//        ThrowIfFailed(m_device->CreateCommittedResource(
-//            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-//            D3D12_HEAP_FLAG_NONE,
-//            &CD3DX12_RESOURCE_DESC::Tex2D(
-//                DXGI_FORMAT_D32_FLOAT,
-//                m_width,
-//                m_height,
-//                1,
-//                1,
-//                1,
-//                0,
-//                D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
-//            D3D12_RESOURCE_STATE_DEPTH_WRITE,
-//            &optClear,
-//            IID_PPV_ARGS(&m_depthStencilBuffer)));
-//
-//        D3D12_DEPTH_STENCIL_DESC depthDesc = {};
-//        depthDesc.DepthEnable = TRUE;
-//        depthDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-//        depthDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-//        depthDesc.StencilEnable = FALSE;
-//
-//        m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), &dsvDesc, dsvHandle);
-//    }
-//
-//    ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
-//
-//}
-
 
 void Game::LoadShaders()
 {
@@ -303,7 +108,7 @@ void Game::LoadShaders()
 
 void Game::CreateMatrices()
 {
-    XMMATRIX world = XMMatrixIdentity();
+    /*XMMATRIX world = XMMatrixIdentity();
     XMStoreFloat4x4(&m_worldMatrix, world);
 
     // Build view matrix
@@ -322,7 +127,10 @@ void Game::CreateMatrices()
         1.0f,
         1000.0f);
 
-    XMStoreFloat4x4(&m_projMatrix, proj);
+    XMStoreFloat4x4(&m_projMatrix, proj);*/
+
+    camera = new Camera(0, 0, -5.0f);
+    camera->UpdateProjectionMatrix(m_aspectRatio);
 }
 
 void Game::CreateBasicGeometry()
@@ -331,6 +139,9 @@ void Game::CreateBasicGeometry()
     int ret = wcstombs(sphereAsset, GetAssetFullPath(L"//Assets//sphere.obj").c_str(), sizeof(sphereAsset));
     sphereMesh = new Mesh(sphereAsset, m_device);
     sphereIndexCount = sphereMesh->m_indexCount;
+
+    sphereEntity = new GameEntity(sphereMesh);
+    sphereEntity->SetScale(2.0f, 2.0f, 2.0f);
 
     // Create constant buffer view
     {
@@ -449,13 +260,48 @@ void Game::PopulateCommandList()
     m_commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH , 1.0f, 0, 0, nullptr);
     m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
     m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_commandList->IASetVertexBuffers(0, 1, &sphereMesh->GetVertexBufferView());
-    m_commandList->IASetIndexBuffer(&sphereMesh->GetIndexBufferView());
-    m_commandList->DrawIndexedInstanced(sphereIndexCount, 1, 0, 0, 0);
+    m_commandList->IASetVertexBuffers(0, 1, &sphereEntity->GetMesh()->GetVertexBufferView());
+    m_commandList->IASetIndexBuffer(&sphereEntity->GetMesh()->GetIndexBufferView());
+    m_commandList->DrawIndexedInstanced(sphereEntity->GetMesh()->GetIndexCount(), 1, 0, 0, 0);
 
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
     
 
     ThrowIfFailed(m_commandList->Close());
 }
+
+#pragma region MouseInput
+void Game::OnMouseDown(WPARAM buttonState, int x, int y)
+{
+    m_prevMousePos.x = x;
+    m_prevMousePos.y = y;
+
+    SetCapture(m_hWnd);
+}
+
+void Game::OnMouseUp(WPARAM buttonState, int x, int y)
+{
+    ReleaseCapture();
+}
+
+void Game::OnMouseMove(WPARAM buttonState, int x, int y)
+{
+    if (buttonState & 0x0001)
+    {
+        float xDiff = (x - m_prevMousePos.x) * 0.005f;
+        float yDiff = (y - m_prevMousePos.y) * 0.005f;
+        camera->Rotate(yDiff, xDiff);
+
+    }
+
+    m_prevMousePos.x = x;
+    m_prevMousePos.y = y;
+}
+
+void Game::OnMouseWheel(WPARAM wheelData, int x, int y)
+{
+}
+
+#pragma endregion
+
 

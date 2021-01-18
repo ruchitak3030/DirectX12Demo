@@ -19,6 +19,7 @@ public:
 
 	D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView();
 	D3D12_INDEX_BUFFER_VIEW GetIndexBufferView();	
+	UINT GetIndexCount() { return m_indexCount; }
 
 private:
 	ComPtr<ID3D12Resource> m_vertexBuffer;
