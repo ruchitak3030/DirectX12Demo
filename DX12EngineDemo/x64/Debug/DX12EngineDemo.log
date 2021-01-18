@@ -931,7 +931,7 @@
        Overriding target "GetNativeManifest" in project "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" with target "GetNativeManifest" from project "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets".
        Overriding target "GetTargetPathWithTargetPlatformMoniker" in project "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets" with target "GetTargetPathWithTargetPlatformMoniker" from project "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.Cpp.DesignTime.targets".
        The target "CoreCompile" listed in a BeforeTargets attribute at "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VisualStudio\v16.0\CodeAnalysis\Microsoft.CodeAnalysis.targets (59,12)" does not exist in the project, and will be ignored.
-Build started 1/18/2021 4:04:47 PM.
+Build started 1/18/2021 4:07:54 PM.
 Logging verbosity is set to: Detailed.     1>Project "C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\DX12EngineDemo\DX12EngineDemo.vcxproj" on node 2 (Rebuild target(s)).
      1>Building with tools version "Current".
        Target "EnableIntermediateOutputPathMismatchWarning" skipped, due to false condition; ('$(RestoreProjectStyle)' == 'PackageReference') was evaluated as ('' == 'PackageReference').
@@ -955,10 +955,10 @@ Logging verbosity is set to: Detailed.     1>Project "C:\Users\Ruchita Kondvilka
      1>Target "SetTelemetryEnvironmentVariables" in file "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.Cpp.DesignTime.targets" from project "C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\DX12EngineDemo\DX12EngineDemo.vcxproj" (target "Rebuild" depends on it):
        Using "SetEnv" task from assembly "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.Build.CppTasks.Common.dll".
        Task "SetEnv"
-         VSTEL_SolutionSessionID={A05434C2-77C4-4164-8D6C-512801AD7F61}
+         VSTEL_SolutionSessionID={5737F9DD-EF81-4E7B-AAA6-120695B1342E}
        Done executing task "SetEnv".
        Task "SetEnv"
-         VSTEL_CurrentSolutionBuildID=9545078
+         VSTEL_CurrentSolutionBuildID=9730906
        Done executing task "SetEnv".
        Task "SetEnv"
          VSTEL_ProjectID={D66F09B1-E489-4399-9B4B-B2CD7913B092}
@@ -1191,7 +1191,7 @@ Logging verbosity is set to: Detailed.     1>Project "C:\Users\Ruchita Kondvilka
        Done executing task "WriteLinesToFile".
        Using "Touch" task from assembly "Microsoft.Build.Tasks.Core, Version=15.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a".
        Task "Touch"
-         Touching "x64\Debug\DX12EngineDemo.tlog\unsuccessfulbuild".
+         Creating "x64\Debug\DX12EngineDemo.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
        Done executing task "Touch".
      1>Done building target "InitializeBuildStatus" in project "DX12EngineDemo.vcxproj".
        Target "PrepareProjectReferences" skipped. Previously built successfully.
@@ -1315,10 +1315,10 @@ Logging verbosity is set to: Detailed.     1>Project "C:\Users\Ruchita Kondvilka
        Task "CL"
          Forcing recompile of all source files due to missing PDB "x64\Debug\vc142.pdb".
          Environment Variables passed to tool:
-           VS_UNICODE_OUTPUT=1840
+           VS_UNICODE_OUTPUT=1380
          C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.25.28610\bin\HostX86\x64\CL.exe /c /ZI /JMC /nologo /W3 /WX- /diagnostics:column /sdl /Od /D _CRT_SECURE_NO_WARNINGS /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"x64\Debug\\" /Fd"x64\Debug\vc142.pdb" /Gd /TP /FC /errorReport:prompt Camera.cpp DXSample.cpp Game.cpp GameEntity.cpp Main.cpp Mesh.cpp
          Tracking command:
-         C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\Tracker.exe /d "C:\Program Files (x86)\MSBuild\15.0\FileTracker\FileTracker32.dll" /i "C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\DX12EngineDemo\x64\Debug\DX12EngineDemo.tlog" /r "C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\CAMERA.CPP|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\DXSAMPLE.CPP|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\GAME.CPP|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\GAMEENTITY.CPP|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\MAIN.CPP|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\MESH.CPP" /b MSBuildConsole_CancelEvent53e47869419f4cbcaa646a749bf0826f  /c "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.25.28610\bin\HostX86\x64\CL.exe"  /c /ZI /JMC /nologo /W3 /WX- /diagnostics:column /sdl /Od /D _CRT_SECURE_NO_WARNINGS /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"x64\Debug\\" /Fd"x64\Debug\vc142.pdb" /Gd /TP /FC /errorReport:prompt Camera.cpp DXSample.cpp Game.cpp GameEntity.cpp Main.cpp Mesh.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\Tracker.exe /d "C:\Program Files (x86)\MSBuild\15.0\FileTracker\FileTracker32.dll" /i "C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\DX12EngineDemo\x64\Debug\DX12EngineDemo.tlog" /r "C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\CAMERA.CPP|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\DXSAMPLE.CPP|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\GAME.CPP|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\GAMEENTITY.CPP|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\MAIN.CPP|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\MESH.CPP" /b MSBuildConsole_CancelEvent8c986c2fa8ea44ac8bbd48e3530b5133  /c "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.25.28610\bin\HostX86\x64\CL.exe"  /c /ZI /JMC /nologo /W3 /WX- /diagnostics:column /sdl /Od /D _CRT_SECURE_NO_WARNINGS /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /permissive- /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"x64\Debug\\" /Fd"x64\Debug\vc142.pdb" /Gd /TP /FC /errorReport:prompt Camera.cpp DXSample.cpp Game.cpp GameEntity.cpp Main.cpp Mesh.cpp
          Camera.cpp
          DXSample.cpp
      1>C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\DX12EngineDemo\DXSample.cpp(174,47): warning C4244: 'argument': conversion from 'float' to 'WPARAM', possible loss of data
@@ -1447,7 +1447,7 @@ Logging verbosity is set to: Detailed.     1>Project "C:\Users\Ruchita Kondvilka
        Using "Link" task from assembly "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.Build.CppTasks.Common.dll".
        Task "Link"
          Environment Variables passed to tool:
-           VS_UNICODE_OUTPUT=1856
+           VS_UNICODE_OUTPUT=1664
          C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.25.28610\bin\HostX86\x64\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\x64\Debug\DX12EngineDemo.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG:FASTLINK /PDB:"C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\x64\Debug\DX12EngineDemo.pdb" /SUBSYSTEM:WINDOWS /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\x64\Debug\DX12EngineDemo.lib" /MACHINE:X64 x64\Debug\Camera.obj
          x64\Debug\DXSample.obj
          x64\Debug\Game.obj
@@ -1455,7 +1455,7 @@ Logging verbosity is set to: Detailed.     1>Project "C:\Users\Ruchita Kondvilka
          x64\Debug\Main.obj
          x64\Debug\Mesh.obj
          Tracking command:
-         C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\Tracker.exe /a /d "C:\Program Files (x86)\MSBuild\15.0\FileTracker\FileTracker32.dll" /i "C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\DX12EngineDemo\x64\Debug\DX12EngineDemo.tlog" /r "C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\X64\DEBUG\CAMERA.OBJ|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\X64\DEBUG\DXSAMPLE.OBJ|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\X64\DEBUG\GAME.OBJ|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\X64\DEBUG\GAMEENTITY.OBJ|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\X64\DEBUG\MAIN.OBJ|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\X64\DEBUG\MESH.OBJ" /b MSBuildConsole_CancelEvent65db18b94bf34f3e8dbf203b6c67dbd8  /c "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.25.28610\bin\HostX86\x64\link.exe"  /ERRORREPORT:PROMPT /OUT:"C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\x64\Debug\DX12EngineDemo.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG:FASTLINK /PDB:"C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\x64\Debug\DX12EngineDemo.pdb" /SUBSYSTEM:WINDOWS /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\x64\Debug\DX12EngineDemo.lib" /MACHINE:X64 x64\Debug\Camera.obj
+         C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\Tracker.exe /a /d "C:\Program Files (x86)\MSBuild\15.0\FileTracker\FileTracker32.dll" /i "C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\DX12EngineDemo\x64\Debug\DX12EngineDemo.tlog" /r "C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\X64\DEBUG\CAMERA.OBJ|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\X64\DEBUG\DXSAMPLE.OBJ|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\X64\DEBUG\GAME.OBJ|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\X64\DEBUG\GAMEENTITY.OBJ|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\X64\DEBUG\MAIN.OBJ|C:\USERS\RUCHITA KONDVILKAR\SOURCE\REPOS\DX12ENGINEDEMO\DX12ENGINEDEMO\X64\DEBUG\MESH.OBJ" /b MSBuildConsole_CancelEvent03db8e80c91e443eb552327c9a47f466  /c "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.25.28610\bin\HostX86\x64\link.exe"  /ERRORREPORT:PROMPT /OUT:"C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\x64\Debug\DX12EngineDemo.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG:FASTLINK /PDB:"C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\x64\Debug\DX12EngineDemo.pdb" /SUBSYSTEM:WINDOWS /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Ruchita Kondvilkar\source\repos\DX12EngineDemo\x64\Debug\DX12EngineDemo.lib" /MACHINE:X64 x64\Debug\Camera.obj
          x64\Debug\DXSample.obj
          x64\Debug\Game.obj
          x64\Debug\GameEntity.obj
@@ -1662,4 +1662,4 @@ Build succeeded.
     7 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:11.67
+Time Elapsed 00:00:11.41
