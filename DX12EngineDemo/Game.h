@@ -35,14 +35,33 @@ private:
         XMFLOAT4X4 projMatrix;
     };
 
+    struct LightConstantBuffer
+    {
+        XMFLOAT4 directionalLightColor;
+        XMFLOAT3 directionalLightDirection;
+        float pad;
+        XMFLOAT4 pointLightColor;
+        XMFLOAT3 pointLightPosition;
+        float pad1;
+        XMFLOAT3 cameraPosition;
+        float pad2;
+    };
+
     // Pipeline objects.   
     ComPtr<ID3D12RootSignature> m_rootSignature;    
     ComPtr<ID3D12PipelineState> m_pipelineState;
 
-    // App resources.
+    // Constant Buffer data.
     ComPtr<ID3D12Resource> m_constantBuffer;
     SceneConstantBuffer m_constantBufferData;
     UINT8* m_pCbvDataBegin;
+
+    ComPtr<ID3D12Resource> m_lightCB;
+    LightConstantBuffer m_lightCBData;
+    UINT8* m_plightCbvDataBegin;
+
+    UINT m_AlignedSceneCBSize = (sizeof(SceneConstantBuffer) + 255) & ~255;
+    UINT m_AlignedLightCBSize = (sizeof(LightConstantBuffer) + 255) & ~255;
 
     // Shaders
     ComPtr<ID3DBlob> m_vertexShader;
@@ -60,9 +79,14 @@ private:
     void LoadShaders();
     void CreateMatrices();
     void CreateBasicGeometry();
+    void CreateConstantBuffers();
     void CreateRootSignature();
     void CreatePSO();
     void PopulateCommandList();
+
+    //Update the Constant Buffers
+    void UpdateSceneConstantBuffer(float deltaTime);
+    void UpdateLightConstantBuffer(float deltaTime);
 
     Mesh* sphereMesh;
     int sphereIndexCount;

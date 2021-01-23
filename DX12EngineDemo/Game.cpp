@@ -27,6 +27,7 @@ void Game::Init()
     LoadShaders();
     CreateMatrices();
     CreateBasicGeometry();
+    CreateConstantBuffers();
     CreateRootSignature();
     CreatePSO();
 }
@@ -36,11 +37,9 @@ void Game::Update(float deltaTime, float totalTime)
     camera->Update(deltaTime);
     sphereEntity->UpdateWorldMatrix();
 
-    //Update constant buffer with latest world-view-proj matrix.
-    XMStoreFloat4x4(&m_constantBufferData.worldMatrix, XMLoadFloat4x4(sphereEntity->GetWorldMatrix()));
-    XMStoreFloat4x4(&m_constantBufferData.viewMatrix, XMLoadFloat4x4(&camera->GetViewMatrix()));
-    XMStoreFloat4x4(&m_constantBufferData.projMatrix, XMLoadFloat4x4(&camera->GetProjectionMatrix()));
-    memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));
+    // Update the constant buffers
+    UpdateSceneConstantBuffer(deltaTime);
+    UpdateLightConstantBuffer(deltaTime);
 }
 
 void Game::Render(float deltaTime, float totalTime)
@@ -104,31 +103,12 @@ void Game::LoadShaders()
         0,
         &m_pixelShader,
         nullptr));
+
+    
 }
 
 void Game::CreateMatrices()
 {
-    /*XMMATRIX world = XMMatrixIdentity();
-    XMStoreFloat4x4(&m_worldMatrix, world);
-
-    // Build view matrix
-    XMVECTOR pos = XMVectorSet(0, 0, -5.0f, -1.0f);
-    XMVECTOR target = XMVectorZero();
-    XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
-    XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
-    XMStoreFloat4x4(&m_viewMatrix, view);
-
-    //Build projection Matrix
-   // XMMATRIX proj = XMLoadFloat4x4(&m_projMatrix);
-    XMMATRIX proj = XMMatrixPerspectiveFovLH(
-        XM_PIDIV4,
-        m_aspectRatio,
-        1.0f,
-        1000.0f);
-
-    XMStoreFloat4x4(&m_projMatrix, proj);*/
-
     camera = new Camera(0, 0, -5.0f);
     camera->UpdateProjectionMatrix(m_aspectRatio);
 }
@@ -143,28 +123,46 @@ void Game::CreateBasicGeometry()
     sphereEntity = new GameEntity(sphereMesh);
     sphereEntity->SetScale(2.0f, 2.0f, 2.0f);
 
-    // Create constant buffer view
-    {
-        ThrowIfFailed(m_device->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-            D3D12_HEAP_FLAG_NONE,
-            &CD3DX12_RESOURCE_DESC::Buffer(1024 * 64),
-            D3D12_RESOURCE_STATE_GENERIC_READ,
-            nullptr,
-            IID_PPV_ARGS(&m_constantBuffer)));
+}
 
-        // Describe and create constant buffer view
-        D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-        cbvDesc.BufferLocation = m_constantBuffer->GetGPUVirtualAddress();
-        cbvDesc.SizeInBytes = (sizeof(SceneConstantBuffer) + 255) & ~255;
-        m_device->CreateConstantBufferView(&cbvDesc, m_cbvHeap->GetCPUDescriptorHandleForHeapStart());
+void Game::CreateConstantBuffers()
+{
+    // Create the constant buffer
+    ThrowIfFailed(m_device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(m_AlignedSceneCBSize),
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(&m_constantBuffer)));
 
-        // Map and initialize the constant buffer
-        CD3DX12_RANGE readRange(0, 0);
-        ThrowIfFailed(m_constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_pCbvDataBegin)));
-        memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));
-    }
+    ThrowIfFailed(m_device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(m_AlignedLightCBSize),
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(&m_lightCB)));
 
+    // Describe and create constant buffer view
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc[2] = {};
+    cbvDesc[0].BufferLocation = m_constantBuffer->GetGPUVirtualAddress();
+    cbvDesc[0].SizeInBytes = m_AlignedSceneCBSize;
+    cbvDesc[1].BufferLocation = m_lightCB->GetGPUVirtualAddress();
+    cbvDesc[1].SizeInBytes = m_AlignedLightCBSize;
+        
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle0(m_cbvHeap->GetCPUDescriptorHandleForHeapStart(), 0, 0);
+    m_device->CreateConstantBufferView(&cbvDesc[0], cbvHandle0);
+
+    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle1(m_cbvHeap->GetCPUDescriptorHandleForHeapStart(), 1, m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+    m_device->CreateConstantBufferView(&cbvDesc[1], cbvHandle1);
+
+    // Map and initialize the constant buffer
+    ThrowIfFailed(m_constantBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pCbvDataBegin)));
+    memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));
+
+    ThrowIfFailed(m_lightCB->Map(0, nullptr, reinterpret_cast<void**>(&m_plightCbvDataBegin)));
+    memcpy(m_plightCbvDataBegin, &m_lightCBData, sizeof(m_lightCBData));
 }
 
 void Game::CreateRootSignature()
@@ -178,26 +176,26 @@ void Game::CreateRootSignature()
     }
 
     // Create single descriptor table of CBVs.
-    CD3DX12_DESCRIPTOR_RANGE1 ranges[1] = {};
-    ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+    CD3DX12_DESCRIPTOR_RANGE ranges[2] = {};
+    ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
+    ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
 
-    CD3DX12_ROOT_PARAMETER1 rootParameters[1] = {};
-    rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_VERTEX);
+    CD3DX12_ROOT_PARAMETER rootParameters[1] = {};
+    rootParameters[0].InitAsDescriptorTable(_countof(ranges), ranges, D3D12_SHADER_VISIBILITY_ALL);
 
     D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
         D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
         D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
         D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-        D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-        D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
+        D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-    // Create a root signature with a single slot which points to the root parameter which consists of single descriptor table as the range.
-    CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
-    rootSignatureDesc.Init_1_1(_countof(rootParameters), rootParameters, 0, nullptr, rootSignatureFlags);
+    // Create a root signature with a single slot which points to the root parameter which consists of 2 descriptor tables as the range.
+    CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
+    rootSignatureDesc.Init(_countof(rootParameters), rootParameters, 0, nullptr, rootSignatureFlags);
 
     ComPtr<ID3DBlob> signature;
     ComPtr<ID3DBlob> error;
-    ThrowIfFailed(D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, featureData.HighestVersion, &signature, &error));
+    ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
     ThrowIfFailed(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)));
 }
 
@@ -269,6 +267,30 @@ void Game::PopulateCommandList()
 
     ThrowIfFailed(m_commandList->Close());
 }
+
+void Game::UpdateSceneConstantBuffer(float deltaTime)
+{
+    //Update constant buffer with latest world-view-proj matrix.
+    XMStoreFloat4x4(&m_constantBufferData.worldMatrix, XMLoadFloat4x4(sphereEntity->GetWorldMatrix()));
+    XMStoreFloat4x4(&m_constantBufferData.viewMatrix, XMLoadFloat4x4(&camera->GetViewMatrix()));
+    XMStoreFloat4x4(&m_constantBufferData.projMatrix, XMLoadFloat4x4(&camera->GetProjectionMatrix()));
+    memcpy(m_pCbvDataBegin, &m_constantBufferData, sizeof(m_constantBufferData));
+}
+
+void Game::UpdateLightConstantBuffer(float deltaTime)
+{
+    // Update constant buffer with light info
+    m_lightCBData.directionalLightColor = XMFLOAT4(1.0f, 0.1f, 0.1f, 1.0f);
+    m_lightCBData.directionalLightDirection = XMFLOAT3(1.0f, 0.0f, 0.0f);
+    m_lightCBData.pad = 0.0f;
+    m_lightCBData.pointLightColor = XMFLOAT4(0.1f, 0.1f, 1.0f, 1.0f);
+    m_lightCBData.pointLightPosition = XMFLOAT3(2.0f, 2.0f, 0.0f);
+    m_lightCBData.pad1 = 0.0f;
+    m_lightCBData.cameraPosition = XMFLOAT3(0.0f, 0.0f, -5.0f);
+    m_lightCBData.pad2 = 0.0f;
+    memcpy(m_plightCbvDataBegin, &m_lightCBData, sizeof(m_lightCBData));
+}
+
 
 #pragma region MouseInput
 void Game::OnMouseDown(WPARAM buttonState, int x, int y)
