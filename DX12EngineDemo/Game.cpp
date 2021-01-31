@@ -1,6 +1,6 @@
 #include "HeaderHelper.h"
 #include "Game.h"
-
+#include "DDSTextureLoader.h"
 
 Game::Game(HINSTANCE hInstance) :
 	DXSample(
@@ -28,6 +28,7 @@ void Game::Init()
     CreateMatrices();
     CreateBasicGeometry();
     CreateConstantBuffers();
+    LoadTextures();
     CreateRootSignature();
     CreatePSO();
 }
@@ -165,6 +166,71 @@ void Game::CreateConstantBuffers()
     memcpy(m_plightCbvDataBegin, &m_lightCBData, sizeof(m_lightCBData));
 }
 
+void Game::LoadTextures()
+{
+    
+    std::unique_ptr<uint8_t[]> ddsData;
+    ThrowIfFailed(LoadDDSTextureFromFile(m_device.Get(),
+        GetAssetFullPath(L"//Textures//stone.dds").c_str(),
+        m_textureBuffer.ReleaseAndGetAddressOf(),
+        ddsData,
+        m_textureSubResourceData));
+
+    const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_textureBuffer.Get(), 0, static_cast<UINT>(m_textureSubResourceData.size()));
+
+    ThrowIfFailed(m_device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(m_textureUploadBuffer.GetAddressOf())));
+
+    UpdateSubresources(m_commandList.Get(), m_textureBuffer.Get(), m_textureUploadBuffer.Get(), 0, 0, static_cast<UINT>(m_textureSubResourceData.size()), m_textureSubResourceData.data());
+    m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_textureBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+
+    // Get the pointer to the start of the heap
+    CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle(m_cbvHeap->GetCPUDescriptorHandleForHeapStart() , 2, m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+
+    // Create the descriptor
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.Format = m_textureBuffer->GetDesc().Format;
+    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = m_textureBuffer->GetDesc().MipLevels;
+    srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+    m_device->CreateShaderResourceView(m_textureBuffer.Get(), &srvDesc, srvHandle);
+
+    ThrowIfFailed(m_commandList->Close());
+    ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
+    m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+    WaitForPreviousFrame();
+
+    // Sampler 
+    // Create Sampler Heap
+    D3D12_DESCRIPTOR_HEAP_DESC samplerHeapDesc = {};
+    samplerHeapDesc.NumDescriptors = 1;
+    samplerHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    samplerHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+    ThrowIfFailed(m_device->CreateDescriptorHeap(&samplerHeapDesc, IID_PPV_ARGS(&m_samplerHeap)));
+
+    // Create Sampler Descriptor
+    D3D12_SAMPLER_DESC samplerDesc = {};
+    samplerDesc.Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+    samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    samplerDesc.MinLOD = 0;
+    samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
+    samplerDesc.MipLODBias = 0.0f;
+    samplerDesc.MaxAnisotropy = 1;
+    samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+    m_device->CreateSampler(&samplerDesc, m_samplerHeap->GetCPUDescriptorHandleForHeapStart());
+        
+}
+
 void Game::CreateRootSignature()
 {
     D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
@@ -176,12 +242,15 @@ void Game::CreateRootSignature()
     }
 
     // Create single descriptor table of CBVs.
-    CD3DX12_DESCRIPTOR_RANGE ranges[2] = {};
-    ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
-    ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
+    CD3DX12_DESCRIPTOR_RANGE ranges[3] = {};
+    ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 2, 0, 0);
+    ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0);
+    ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0, 0);
 
-    CD3DX12_ROOT_PARAMETER rootParameters[1] = {};
-    rootParameters[0].InitAsDescriptorTable(_countof(ranges), ranges, D3D12_SHADER_VISIBILITY_ALL);
+    CD3DX12_ROOT_PARAMETER rootParameters[2] = {};
+    rootParameters[0].InitAsDescriptorTable(2, &ranges[0], D3D12_SHADER_VISIBILITY_ALL);
+    rootParameters[1].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_PIXEL);
+
 
     D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
         D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
@@ -241,10 +310,12 @@ void Game::PopulateCommandList()
     // Set necessary states
     m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
-    ID3D12DescriptorHeap* ppHeaps[] = { m_cbvHeap.Get() };
+    ID3D12DescriptorHeap* ppHeaps[] = { m_cbvHeap.Get(), m_samplerHeap.Get()};
     m_commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
     m_commandList->SetGraphicsRootDescriptorTable(0, m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
+    m_commandList->SetGraphicsRootDescriptorTable(1, m_samplerHeap->GetGPUDescriptorHandleForHeapStart());
+
     m_commandList->RSSetViewports(1, &m_viewport);
     m_commandList->RSSetScissorRects(1, &m_scissorRect);
 
@@ -263,7 +334,6 @@ void Game::PopulateCommandList()
     m_commandList->DrawIndexedInstanced(sphereEntity->GetMesh()->GetIndexCount(), 1, 0, 0, 0);
 
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
-    
 
     ThrowIfFailed(m_commandList->Close());
 }

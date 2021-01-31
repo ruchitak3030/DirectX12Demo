@@ -17,29 +17,35 @@ struct VertexToPixel
 	float4 position		: SV_POSITION;
 	float3 normal		: NORMAL;
 	float3 worldPos		: WORLDPOS;
+	float2 uv			: TEXCOORD;
 };
 
+Texture2D diffuseAlbedo		: register(t0);
+SamplerState basicSampler	: register(s0);
 
 // Entry point for this pixel shader
 float4 main(VertexToPixel input) : SV_TARGET
 {
+	// Grab the texture color
+	float4 textureColor = diffuseAlbedo.Sample(basicSampler, input.uv);
+
 	// Renormalize interpolated normals
 	input.normal = normalize(input.normal);
 
-// Standard N dot L lighting (direction TO the light)
-float lightAmountDL = saturate(dot(input.normal, -directionalLightDirection));
+	// Standard N dot L lighting (direction TO the light)
+	float lightAmountDL = saturate(dot(input.normal, -directionalLightDirection));
 
-// N dot L for point light
-float3 dirToPointLight = normalize(pointLightPosition - input.worldPos);
-float lightAmountPL = saturate(dot(input.normal, dirToPointLight));
+	// N dot L for point light
+	float3 dirToPointLight = normalize(pointLightPosition - input.worldPos);
+	float lightAmountPL = saturate(dot(input.normal, dirToPointLight));
 
-// Specular highlight for point light
-float3 toCamera = normalize(cameraPosition - input.worldPos);
-float3 refl = reflect(-dirToPointLight, input.normal);
-float specular = pow(saturate(dot(refl, toCamera)), 8);
+	// Specular highlight for point light
+	float3 toCamera = normalize(cameraPosition - input.worldPos);
+	float3 refl = reflect(-dirToPointLight, input.normal);
+	float specular = pow(saturate(dot(refl, toCamera)), 8);
 
-return
-	(directionalLightColor * lightAmountDL) +
-	(pointLightColor * lightAmountPL) +
+	return
+	(directionalLightColor * lightAmountDL * textureColor) +
+	(pointLightColor * lightAmountPL * textureColor) +
 	specular;
 }

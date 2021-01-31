@@ -63,6 +63,12 @@ private:
     UINT m_AlignedSceneCBSize = (sizeof(SceneConstantBuffer) + 255) & ~255;
     UINT m_AlignedLightCBSize = (sizeof(LightConstantBuffer) + 255) & ~255;
 
+    // Texture related stuff
+    ComPtr<ID3D12Resource> m_textureBuffer;
+    ComPtr<ID3D12Resource> m_textureUploadBuffer;
+    std::vector<D3D12_SUBRESOURCE_DATA> m_textureSubResourceData;
+    ComPtr<ID3D12DescriptorHeap> m_samplerHeap;
+
     // Shaders
     ComPtr<ID3DBlob> m_vertexShader;
     ComPtr<ID3DBlob> m_pixelShader;
@@ -80,6 +86,7 @@ private:
     void CreateMatrices();
     void CreateBasicGeometry();
     void CreateConstantBuffers();
+    void LoadTextures();
     void CreateRootSignature();
     void CreatePSO();
     void PopulateCommandList();

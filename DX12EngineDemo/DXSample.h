@@ -77,6 +77,7 @@ protected:
 	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
 	ComPtr<ID3D12DescriptorHeap> m_dsvHeap;
 	ComPtr<ID3D12DescriptorHeap> m_cbvHeap;
+	ComPtr<ID3D12DescriptorHeap> m_srvHeap;
 	UINT m_rtvDescriptorSize;
 	UINT m_dsvDescriptorSize;
 

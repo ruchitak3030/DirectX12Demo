@@ -19,6 +19,7 @@ struct VertexToPixel
 	float4 position		: SV_POSITION;
 	float3 normal		: NORMAL;
 	float3 worldPos		: WORLDPOS;
+	float2 uv			: TEXCOORD;
 };
 
 // --------------------------------------------------------
@@ -39,6 +40,8 @@ VertexToPixel main(VertexShaderInput input)
 
 	// Pass the normal through
 	output.normal = mul(input.normal, (float3x3)world);
+
+	output.uv = input.uv;
 
 	return output;
 }

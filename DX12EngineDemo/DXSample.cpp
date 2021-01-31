@@ -251,9 +251,9 @@ HRESULT DXSample::InitDirectX()
 	if (FAILED(hr))
 		return hr;
 
-	hr = m_commandList->Close();
+	/*hr = m_commandList->Close();
 	if (FAILED(hr))
-		return hr;
+		return hr;*/
 
 	// Describe and create the swap chain.
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
@@ -308,10 +308,19 @@ HRESULT DXSample::InitDirectX()
 
 		// Describe and create a constant buffer view (CBV) descriptor heap.
 		D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
-		cbvHeapDesc.NumDescriptors = 2;
+		cbvHeapDesc.NumDescriptors = 3;
 		cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		hr = m_device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&m_cbvHeap));
+		if (FAILED(hr))
+			return hr;
+
+		// Describe and create a SRV descriptor heap
+		D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+		srvHeapDesc.NumDescriptors = 1;
+		srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		hr = m_device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap));
 		if (FAILED(hr))
 			return hr;
 	}
