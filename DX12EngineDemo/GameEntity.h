@@ -1,13 +1,12 @@
 #pragma once
-
 #include "Mesh.h"
-
 
 class GameEntity
 {
 public:
 
 	GameEntity(Mesh* mesh);
+	GameEntity(const char* objFile, ComPtr<ID3D12Device> device);
 	~GameEntity();
 
 	void UpdateWorldMatrix();
@@ -28,5 +27,7 @@ private:
 	XMFLOAT3 m_position;
 	XMFLOAT3 m_rotation;
 	XMFLOAT3 m_scale;
+
+	void LoadModel(const char* objFile, ComPtr<ID3D12Device> device);
 };
 

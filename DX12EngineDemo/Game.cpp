@@ -18,7 +18,6 @@ Game::Game(HINSTANCE hInstance) :
 Game::~Game()
 {
     delete sphereEntity;
-    delete sphereMesh;
     delete camera;
 }
 
@@ -117,12 +116,16 @@ void Game::CreateMatrices()
 void Game::CreateBasicGeometry()
 {
     char sphereAsset[128];
-    int ret = wcstombs(sphereAsset, GetAssetFullPath(L"//Assets//sphere.obj").c_str(), sizeof(sphereAsset));
-    sphereMesh = new Mesh(sphereAsset, m_device);
+    int ret = wcstombs(sphereAsset, GetAssetFullPath(L"//Assets//cylinder.obj").c_str(), sizeof(sphereAsset));
+
+    sphereEntity = new GameEntity(sphereAsset, m_device);
+    sphereEntity->SetScale(2.0f, 2.0f, 2.0f);
+
+    /*sphereMesh = new Mesh(sphereAsset, m_device);
     sphereIndexCount = sphereMesh->m_indexCount;
 
     sphereEntity = new GameEntity(sphereMesh);
-    sphereEntity->SetScale(2.0f, 2.0f, 2.0f);
+    sphereEntity->SetScale(2.0f, 2.0f, 2.0f);*/
 
 }
 

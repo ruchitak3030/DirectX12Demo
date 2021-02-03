@@ -1,7 +1,6 @@
 #pragma once
 #include "DXSample.h"
 #include "Vertex.h"
-#include "Mesh.h"
 #include "Camera.h"
 #include "GameEntity.h"
 
@@ -95,8 +94,6 @@ private:
     void UpdateSceneConstantBuffer(float deltaTime);
     void UpdateLightConstantBuffer(float deltaTime);
 
-    Mesh* sphereMesh;
-    int sphereIndexCount;
     GameEntity* sphereEntity;
     Camera* camera;
 };

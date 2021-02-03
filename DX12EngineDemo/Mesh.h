@@ -5,13 +5,13 @@
 #include <DirectXMath.h>
 #include "Vertex.h"
 
+
 using namespace Microsoft::WRL;
 
 class Mesh
 {
 public:
 	Mesh(Vertex* vertices, int* indices, int numVertices, int numIndices, ComPtr<ID3D12Device> device);
-	Mesh(const char* objFile, ComPtr<ID3D12Device> device);
 	~Mesh();
 
 	UINT m_indexCount;
