@@ -109,24 +109,17 @@ void Game::LoadShaders()
 
 void Game::CreateMatrices()
 {
-    camera = new Camera(0, 0, -5.0f);
+    camera = new Camera(0, 5, -40.0f);
     camera->UpdateProjectionMatrix(m_aspectRatio);
 }
 
 void Game::CreateBasicGeometry()
 {
     char sphereAsset[128];
-    int ret = wcstombs(sphereAsset, GetAssetFullPath(L"//Assets//cylinder.obj").c_str(), sizeof(sphereAsset));
+    int ret = wcstombs(sphereAsset, GetAssetFullPath(L"//Assets//nanosuit//nanosuit.obj").c_str(), sizeof(sphereAsset));
 
     sphereEntity = new GameEntity(sphereAsset, m_device);
     sphereEntity->SetScale(2.0f, 2.0f, 2.0f);
-
-    /*sphereMesh = new Mesh(sphereAsset, m_device);
-    sphereIndexCount = sphereMesh->m_indexCount;
-
-    sphereEntity = new GameEntity(sphereMesh);
-    sphereEntity->SetScale(2.0f, 2.0f, 2.0f);*/
-
 }
 
 void Game::CreateConstantBuffers()
@@ -332,9 +325,13 @@ void Game::PopulateCommandList()
     m_commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH , 1.0f, 0, 0, nullptr);
     m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
     m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_commandList->IASetVertexBuffers(0, 1, &sphereEntity->GetMesh()->GetVertexBufferView());
-    m_commandList->IASetIndexBuffer(&sphereEntity->GetMesh()->GetIndexBufferView());
-    m_commandList->DrawIndexedInstanced(sphereEntity->GetMesh()->GetIndexCount(), 1, 0, 0, 0);
+    //m_commandList->IASetVertexBuffers(0, 1, &sphereEntity->GetMesh()->GetVertexBufferView());
+    //m_commandList->IASetIndexBuffer(&sphereEntity->GetMesh()->GetIndexBufferView());
+
+    // TODO: Consider the case where a GameEntity consists of multiple meshes
+    sphereEntity->Draw(m_commandList);
+
+   // m_commandList->DrawIndexedInstanced(sphereEntity->GetMesh()->GetIndexCount(), 1, 0, 0, 0);
 
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 

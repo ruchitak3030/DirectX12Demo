@@ -4,6 +4,9 @@
 #include "DXSampleHelper.h"
 #include <DirectXMath.h>
 #include "Vertex.h"
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
 
 
 using namespace Microsoft::WRL;
@@ -12,6 +15,8 @@ class Mesh
 {
 public:
 	Mesh(Vertex* vertices, int* indices, int numVertices, int numIndices, ComPtr<ID3D12Device> device);
+	Mesh(const Mesh& mesh);
+	void Draw(ComPtr<ID3D12GraphicsCommandList> commandList);
 	~Mesh();
 
 	UINT m_indexCount;

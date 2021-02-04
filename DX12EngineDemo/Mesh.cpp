@@ -6,6 +6,22 @@ Mesh::Mesh(Vertex* vertices, int* indices, int numVertices, int numIndices, ComP
 	CreateBuffers(vertices, indices, numVertices, numIndices, device);
 }
 
+Mesh::Mesh(const Mesh& mesh)
+{
+	this->m_indexBuffer = mesh.m_indexBuffer;
+	this->m_vertexBuffer = mesh.m_vertexBuffer;
+	this->m_vertexBufferView = mesh.m_vertexBufferView;
+	this->m_indexBufferView = mesh.m_indexBufferView;
+	this->m_indexCount = mesh.m_indexCount;
+}
+
+void Mesh::Draw(ComPtr<ID3D12GraphicsCommandList> commandList)
+{
+	commandList->IASetVertexBuffers(0, 1, &this->m_vertexBufferView);
+	commandList->IASetIndexBuffer(&this->m_indexBufferView);
+	commandList->DrawIndexedInstanced(this->m_indexCount, 1, 0, 0, 0);
+}
+
 Mesh::~Mesh()
 {
 }

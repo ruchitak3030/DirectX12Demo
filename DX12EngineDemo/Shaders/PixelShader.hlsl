@@ -44,8 +44,8 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float3 refl = reflect(-dirToPointLight, input.normal);
 	float specular = pow(saturate(dot(refl, toCamera)), 8);
 
-	return textureColor;
-	/*(directionalLightColor * lightAmountDL * textureColor) +
+	return
+	(directionalLightColor * lightAmountDL * textureColor) +
 	(pointLightColor * lightAmountPL * textureColor) +
-	specular;*/
+	specular;
 }

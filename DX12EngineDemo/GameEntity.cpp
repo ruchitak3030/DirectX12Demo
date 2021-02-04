@@ -10,7 +10,7 @@ GameEntity::GameEntity(Mesh* mesh)
 	m_scale = XMFLOAT3(1, 1, 1);
 }
 
-GameEntity::GameEntity(const char* objFile, ComPtr<ID3D12Device> device)
+/*GameEntity::GameEntity(const char* objFile, ComPtr<ID3D12Device> device)
 {
 	
 	LoadModel(objFile, device);
@@ -19,6 +19,25 @@ GameEntity::GameEntity(const char* objFile, ComPtr<ID3D12Device> device)
 	m_rotation = XMFLOAT3(0, 0, 0);
 	m_scale = XMFLOAT3(1, 1, 1);
 	
+}*/
+
+GameEntity::GameEntity(const std::string& filePath, ComPtr<ID3D12Device> device)
+{
+	m_device = device;
+	XMStoreFloat4x4(&m_worldMatrix, XMMatrixIdentity());
+	m_position = XMFLOAT3(0, 0, 0);
+	m_rotation = XMFLOAT3(0, 0, 0);
+	m_scale = XMFLOAT3(1, 1, 1);
+	if (!this->LoadAssimpModel(filePath))
+		return;
+}
+
+void GameEntity::Draw(ComPtr<ID3D12GraphicsCommandList> commandList)
+{
+	for (int i = 0; i < meshes.size(); i++)
+	{
+		meshes[i].Draw(commandList);
+	}
 }
 
 GameEntity::~GameEntity()
@@ -200,4 +219,72 @@ void GameEntity::LoadModel(const char* objFile, ComPtr<ID3D12Device> device)
 	obj.close();
 
 	mesh = new Mesh(&vertices[0], &indices[0], numVertices, numVertices, device);
+}
+
+bool GameEntity::LoadAssimpModel(const std::string& filePath)
+{
+	Assimp::Importer importer;
+	const aiScene* pScene = importer.ReadFile(filePath,
+		aiProcess_Triangulate |
+		aiProcess_ConvertToLeftHanded);
+
+	if (pScene == nullptr)
+		return false;
+
+	this->ProcessAssimpNode(pScene->mRootNode, pScene);
+
+	return true;
+}
+
+void GameEntity::ProcessAssimpNode(aiNode* node, const aiScene* scene)
+{
+	for (UINT i = 0; i < node->mNumMeshes; i++)
+	{
+		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+		meshes.push_back(this->ProcessAssimpMesh(mesh, scene));
+	}
+
+	for (UINT i = 0; i < node->mNumChildren; i++)
+	{
+		this->ProcessAssimpNode(node->mChildren[i], scene);
+	}
+}
+
+Mesh GameEntity::ProcessAssimpMesh(aiMesh* mesh, const aiScene* scene)
+{
+
+	// Data to fill
+	std::vector<Vertex> vertices;
+	std::vector<int> indices;
+	int numVertices = 0;
+	int numIndices = 0;
+	// Get vertices
+	for (UINT i = 0; i < mesh->mNumVertices; i++)
+	{
+		Vertex vertex;
+		vertex.position.x = mesh->mVertices[i].x;
+		vertex.position.y = mesh->mVertices[i].y;
+		vertex.position.z = mesh->mVertices[i].z;
+
+		if (mesh->mTextureCoords[0])
+		{
+			vertex.uv.x = (float)mesh->mTextureCoords[0][i].x;
+			vertex.uv.y = (float)mesh->mTextureCoords[0][i].y;
+		}
+
+		vertices.push_back(vertex);
+		
+	}
+
+	numVertices = mesh->mNumVertices;
+	// Get indices
+	for (UINT i = 0; i < mesh->mNumFaces; i++)
+	{
+		aiFace face = mesh->mFaces[i];
+		numIndices += face.mNumIndices;
+		for (UINT j = 0; j < face.mNumIndices; j++)
+			indices.push_back(face.mIndices[j]);
+	}
+
+	return Mesh(&vertices[0], &indices[0], numVertices, numIndices, m_device);
 }

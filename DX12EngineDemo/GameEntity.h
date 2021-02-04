@@ -6,7 +6,9 @@ class GameEntity
 public:
 
 	GameEntity(Mesh* mesh);
-	GameEntity(const char* objFile, ComPtr<ID3D12Device> device);
+	//GameEntity(const char* objFile, ComPtr<ID3D12Device> device);
+	GameEntity(const std::string& filePath, ComPtr<ID3D12Device> device);
+	void Draw(ComPtr<ID3D12GraphicsCommandList> commandList);
 	~GameEntity();
 
 	void UpdateWorldMatrix();
@@ -27,7 +29,14 @@ private:
 	XMFLOAT3 m_position;
 	XMFLOAT3 m_rotation;
 	XMFLOAT3 m_scale;
+	ComPtr<ID3D12Device> m_device;
 
 	void LoadModel(const char* objFile, ComPtr<ID3D12Device> device);
+
+	// Assimp related stuff
+	std::vector<Mesh> meshes;
+	bool LoadAssimpModel(const std::string& filePath);
+	void ProcessAssimpNode(aiNode* node, const aiScene* scene);
+	Mesh ProcessAssimpMesh(aiMesh* mesh, const aiScene* scene);
 };
 
