@@ -1,13 +1,19 @@
+
+#include "LightsHelper.hlsli"
+
 cbuffer LightData : register(b1)
 {
-	float4 directionalLightColor;
-	float3 directionalLightDirection;
+	float4 AmbientLight;
+	float3 EyePos;
 	float pad;
-	float4 pointLightColor;
-	float3 pointLightPosition;
-	float pad1;
-	float3 cameraPosition;
-	float pad2;
+	Light lights[MaxLights];
+};
+
+cbuffer MaterialData : register(b2)
+{
+	float4 DiffuseAlbedo;
+	float3 FresnelR0;
+	float Roughness;
 };
 
 // Defines the input to this pixel shader
@@ -32,20 +38,21 @@ float4 main(VertexToPixel input) : SV_TARGET
 	// Renormalize interpolated normals
 	input.normal = normalize(input.normal);
 
-	// Standard N dot L lighting (direction TO the light)
-	float lightAmountDL = saturate(dot(input.normal, -directionalLightDirection));
+	// Vector from point being lit to eye
+	float3 toEye = normalize(EyePos - input.worldPos);
 
-	// N dot L for point light
-	float3 dirToPointLight = normalize(pointLightPosition - input.worldPos);
-	float lightAmountPL = saturate(dot(input.normal, dirToPointLight));
+	// Indirect lighting
+	float4 ambient = AmbientLight * DiffuseAlbedo;
 
-	// Specular highlight for point light
-	float3 toCamera = normalize(cameraPosition - input.worldPos);
-	float3 refl = reflect(-dirToPointLight, input.normal);
-	float specular = pow(saturate(dot(refl, toCamera)), 8);
+	const float shininess = 1.0f - Roughness;
+	Material mat = { DiffuseAlbedo, FresnelR0 , shininess };
+	float3 shadowFactor = 1.0f;
 
-	return
-	(directionalLightColor * lightAmountDL * textureColor) +
-	(pointLightColor * lightAmountPL * textureColor) +
-	specular;
+	float4 resultLight = ComputeLighting(lights, mat, input.worldPos, input.normal, toEye, shadowFactor);
+
+	float4 litColor = ambient + resultLight;
+
+	litColor.a = DiffuseAlbedo.a;
+
+	return litColor*textureColor;
 }

@@ -34,16 +34,31 @@ private:
         XMFLOAT4X4 projMatrix;
     };
 
+    struct Light
+    {
+        XMFLOAT3 Strength /*= { 0.5f, 0.5f, 0.5f }*/;
+        float FalloffStart /*= 1.0f*/;                              // point/spot light only
+        XMFLOAT3 Direction /*= { 0.0f, -1.0f, 0.0f }*/;    // directional/spot light only
+        float FalloffEnd /*= 10.0f*/;                               // point/spot light only
+        XMFLOAT3 Position /*= { 0.0f, 0.0f, 0.0f }*/;      // point/spot light only
+        float SpotPower/* = 64.0f*/;
+    };
+
+#define MaxLights 3
+
     struct LightConstantBuffer
     {
-        XMFLOAT4 directionalLightColor;
-        XMFLOAT3 directionalLightDirection;
-        float pad;
-        XMFLOAT4 pointLightColor;
-        XMFLOAT3 pointLightPosition;
-        float pad1;
-        XMFLOAT3 cameraPosition;
-        float pad2;
+        XMFLOAT4 AmbientLight;
+        XMFLOAT3 EyePos;
+        float pad = 0.0f;
+        Light lights[MaxLights];
+    };
+
+    struct MaterialConstantBuffer
+    {
+        XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
+        XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
+        float Roughness = 0.25f;
     };
 
     // Pipeline objects.   
@@ -59,8 +74,13 @@ private:
     LightConstantBuffer m_lightCBData;
     UINT8* m_plightCbvDataBegin;
 
+    ComPtr<ID3D12Resource> m_materialCB;
+    MaterialConstantBuffer m_materialCBData;
+    UINT8* m_pmaterialCbvDataBegin;
+
     UINT m_AlignedSceneCBSize = (sizeof(SceneConstantBuffer) + 255) & ~255;
     UINT m_AlignedLightCBSize = (sizeof(LightConstantBuffer) + 255) & ~255;
+    UINT m_AlignedMaterialCBSize = (sizeof(MaterialConstantBuffer) + 255) & ~255;
 
     // Texture related stuff
     ComPtr<ID3D12Resource> m_textureBuffer;
@@ -86,6 +106,7 @@ private:
     void CreateBasicGeometry();
     void CreateConstantBuffers();
     void LoadTextures();
+    void CreateMaterials();
     void CreateRootSignature();
     void CreatePSO();
     void PopulateCommandList();
@@ -93,8 +114,14 @@ private:
     //Update the Constant Buffers
     void UpdateSceneConstantBuffer(float deltaTime);
     void UpdateLightConstantBuffer(float deltaTime);
+    void UpdateMaterialConstantBuffer();
+
+    // Shader Compile
+    HRESULT CompileShader(_In_ LPCWSTR srcFile, _In_ LPCSTR entryPoint, _In_ LPCSTR profile, _Outptr_ ID3DBlob** blob);
 
     GameEntity* sphereEntity;
     Camera* camera;
+
+    XMFLOAT3 m_cameraPos = { 0.0f, 5.0f, -30.0f };
 };
 

@@ -40,6 +40,7 @@ void Game::Update(float deltaTime, float totalTime)
     // Update the constant buffers
     UpdateSceneConstantBuffer(deltaTime);
     UpdateLightConstantBuffer(deltaTime);
+    UpdateMaterialConstantBuffer();
 }
 
 void Game::Render(float deltaTime, float totalTime)
@@ -73,43 +74,40 @@ void Game::OnResize()
 
 void Game::LoadShaders()
 {
-    // Shader compilation
-   
 
-#if defined(_DEBUG)
-    UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-    UINT compileFlags = 0;
-#endif
-
-    ThrowIfFailed(D3DCompileFromFile(
-        GetAssetFullPath(L"//Shaders//VertexShader.hlsl").c_str(), 
-        nullptr, 
-        nullptr, 
-        "main",
+    // Compile vertex shader shader
+    //ID3DBlob* vsBlob = nullptr;
+    HRESULT hr = CompileShader(GetAssetFullPath(L"//Shaders//VertexShader.hlsl").c_str(), 
+        "main",         
         "vs_5_0", 
-        compileFlags, 
-        0, 
-        &m_vertexShader, 
-        nullptr));
+        &m_vertexShader);
 
-    ThrowIfFailed(D3DCompileFromFile(
-        GetAssetFullPath(L"//Shaders//PixelShader.hlsl").c_str(), 
-        nullptr, 
-        nullptr, 
+    if (FAILED(hr))
+    {
+        printf("Failed compiling vertex shader %08X\n", hr);
+        //return -1;
+    }
+
+
+    // Compile pixel shader shader
+    //ID3DBlob* psBlob = nullptr;
+    hr = CompileShader(GetAssetFullPath(L"//Shaders//PixelShader.hlsl").c_str(),
         "main", 
         "ps_5_0", 
-        compileFlags,
-        0,
-        &m_pixelShader,
-        nullptr));
+        &m_pixelShader);
+
+    if (FAILED(hr))
+    {
+        printf("Failed compiling pixel shader %08X\n", hr);
+        //return -1;
+    }
 
     
 }
 
 void Game::CreateMatrices()
 {
-    camera = new Camera(0, 5, -40.0f);
+    camera = new Camera(m_cameraPos.x, m_cameraPos.y, m_cameraPos.z);
     camera->UpdateProjectionMatrix(m_aspectRatio);
 }
 
@@ -118,8 +116,8 @@ void Game::CreateBasicGeometry()
     char sphereAsset[128];
     int ret = wcstombs(sphereAsset, GetAssetFullPath(L"//Assets//nanosuit//nanosuit.obj").c_str(), sizeof(sphereAsset));
 
-    sphereEntity = new GameEntity(sphereAsset, m_device);
-    sphereEntity->SetScale(2.0f, 2.0f, 2.0f);
+    sphereEntity = new GameEntity(sphereAsset, XMFLOAT3(0.0f, 50.0f, 0.0f), m_device);
+    sphereEntity->SetScale(1.0f, 1.0f, 1.0f);
 }
 
 void Game::CreateConstantBuffers()
@@ -141,18 +139,31 @@ void Game::CreateConstantBuffers()
         nullptr,
         IID_PPV_ARGS(&m_lightCB)));
 
+    ThrowIfFailed(m_device->CreateCommittedResource(
+        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+        D3D12_HEAP_FLAG_NONE,
+        &CD3DX12_RESOURCE_DESC::Buffer(m_AlignedMaterialCBSize),
+        D3D12_RESOURCE_STATE_GENERIC_READ,
+        nullptr,
+        IID_PPV_ARGS(&m_materialCB)));
+
     // Describe and create constant buffer view
-    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc[2] = {};
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc[3] = {};
     cbvDesc[0].BufferLocation = m_constantBuffer->GetGPUVirtualAddress();
     cbvDesc[0].SizeInBytes = m_AlignedSceneCBSize;
     cbvDesc[1].BufferLocation = m_lightCB->GetGPUVirtualAddress();
     cbvDesc[1].SizeInBytes = m_AlignedLightCBSize;
+    cbvDesc[2].BufferLocation = m_materialCB->GetGPUVirtualAddress();
+    cbvDesc[2].SizeInBytes = m_AlignedMaterialCBSize;
         
     CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle0(m_cbvHeap->GetCPUDescriptorHandleForHeapStart(), 0, 0);
     m_device->CreateConstantBufferView(&cbvDesc[0], cbvHandle0);
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle1(m_cbvHeap->GetCPUDescriptorHandleForHeapStart(), 1, m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
-    m_device->CreateConstantBufferView(&cbvDesc[1], cbvHandle1);
+    cbvHandle0.Offset(m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+    m_device->CreateConstantBufferView(&cbvDesc[1], cbvHandle0);
+
+    cbvHandle0.Offset(m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+    m_device->CreateConstantBufferView(&cbvDesc[2], cbvHandle0);
 
     // Map and initialize the constant buffer
     ThrowIfFailed(m_constantBuffer->Map(0, nullptr, reinterpret_cast<void**>(&m_pCbvDataBegin)));
@@ -160,6 +171,9 @@ void Game::CreateConstantBuffers()
 
     ThrowIfFailed(m_lightCB->Map(0, nullptr, reinterpret_cast<void**>(&m_plightCbvDataBegin)));
     memcpy(m_plightCbvDataBegin, &m_lightCBData, sizeof(m_lightCBData));
+
+    ThrowIfFailed(m_materialCB->Map(0, nullptr, reinterpret_cast<void**>(&m_pmaterialCbvDataBegin)));
+    memcpy(m_pmaterialCbvDataBegin, &m_materialCBData, sizeof(m_materialCBData));
 }
 
 void Game::LoadTextures()
@@ -186,7 +200,7 @@ void Game::LoadTextures()
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_textureBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 
     // Get the pointer to the start of the heap
-    CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle(m_cbvHeap->GetCPUDescriptorHandleForHeapStart() , 2, m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
+    CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle(m_cbvHeap->GetCPUDescriptorHandleForHeapStart() , 3, m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV));
 
     // Create the descriptor
     D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -227,6 +241,10 @@ void Game::LoadTextures()
         
 }
 
+void Game::CreateMaterials()
+{
+}
+
 void Game::CreateRootSignature()
 {
     D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
@@ -239,7 +257,7 @@ void Game::CreateRootSignature()
 
     // Create single descriptor table of CBVs.
     CD3DX12_DESCRIPTOR_RANGE ranges[3] = {};
-    ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 2, 0, 0);
+    ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 3, 0, 0);
     ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0);
     ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0, 0);
 
@@ -321,7 +339,7 @@ void Game::PopulateCommandList()
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
     CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
 
-    m_commandList->ClearRenderTargetView(rtvHandle, Colors::CornflowerBlue, 0, nullptr);
+    m_commandList->ClearRenderTargetView(rtvHandle, Colors::Black, 0, nullptr);
     m_commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH , 1.0f, 0, 0, nullptr);
     m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
     m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -349,16 +367,87 @@ void Game::UpdateSceneConstantBuffer(float deltaTime)
 
 void Game::UpdateLightConstantBuffer(float deltaTime)
 {
-    // Update constant buffer with light info
-    m_lightCBData.directionalLightColor = XMFLOAT4(1.0f, 0.1f, 0.1f, 1.0f);
-    m_lightCBData.directionalLightDirection = XMFLOAT3(1.0f, 0.0f, 0.0f);
-    m_lightCBData.pad = 0.0f;
-    m_lightCBData.pointLightColor = XMFLOAT4(0.1f, 0.1f, 1.0f, 1.0f);
-    m_lightCBData.pointLightPosition = XMFLOAT3(2.0f, 2.0f, 0.0f);
-    m_lightCBData.pad1 = 0.0f;
-    m_lightCBData.cameraPosition = XMFLOAT3(0.0f, 0.0f, -5.0f);
-    m_lightCBData.pad2 = 0.0f;
+    //XMFLOAT3 Strength = { 0.5f, 0.5f, 0.5f };
+    //float FalloffStart = 1.0f;                              // point/spot light only
+    //XMFLOAT3 Direction = { 0.0f, -1.0f, 0.0f };    // directional/spot light only
+    //float FalloffEnd = 10.0f;                               // point/spot light only
+    //XMFLOAT3 Position = { 0.0f, 0.0f, 0.0f };      // point/spot light only
+    //float SpotPower = 64.0f;
+
+    m_lightCBData.AmbientLight = XMFLOAT4( 0.0f, 0.0f, 0.0f, 1.0f );
+    m_lightCBData.EyePos = m_cameraPos;
+    m_lightCBData.pad = 0;
+
+    // 2 directional lights
+    m_lightCBData.lights[0].Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
+    m_lightCBData.lights[0].Strength = XMFLOAT3(0.4f, 0.4f, 0.4f);
+
+    // 1 point light
+    m_lightCBData.lights[1].Strength = XMFLOAT3(0.83f, 0.10f, 0.12f);
+    m_lightCBData.lights[1].FalloffStart = 1.0f;
+    m_lightCBData.lights[1].Position = XMFLOAT3(-2.0f, 8.0f, 0.0f);
+    m_lightCBData.lights[1].FalloffEnd = 10.0f;
+
+    // 1 Spot light
+    m_lightCBData.lights[2].Strength = XMFLOAT3(0.89f, 0.51f, 0.09f);
+    m_lightCBData.lights[2].FalloffStart = 1.0f;
+    m_lightCBData.lights[2].Direction = XMFLOAT3(0.0f, 8.0f, -1.0f);
+    m_lightCBData.lights[2].FalloffEnd = 10.0f;
+    m_lightCBData.lights[2].Position = XMFLOAT3(0.0f, 9.0f, -3.0f);
+    m_lightCBData.lights[2].SpotPower = 1.0f;
+
     memcpy(m_plightCbvDataBegin, &m_lightCBData, sizeof(m_lightCBData));
+}
+
+void Game::UpdateMaterialConstantBuffer()
+{
+    m_materialCBData.DiffuseAlbedo = XMFLOAT4(DirectX::Colors::DarkGray);
+    m_materialCBData.FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
+    m_materialCBData.Roughness = 0.8f;
+
+    memcpy(m_pmaterialCbvDataBegin, &m_materialCBData, sizeof(m_materialCBData));
+}
+
+HRESULT Game::CompileShader(LPCWSTR srcFile, LPCSTR entryPoint, LPCSTR profile, ID3DBlob** blob)
+{
+    if (!srcFile || !entryPoint || !profile || !blob)
+        return E_INVALIDARG;
+
+    *blob = nullptr;
+
+    UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
+#if defined( DEBUG ) || defined( _DEBUG )
+    flags |= D3DCOMPILE_DEBUG;
+#endif
+
+    const D3D_SHADER_MACRO defines[] =
+    {
+        "EXAMPLE_DEFINE", "1",
+        NULL, NULL
+    };
+
+    ID3DBlob* shaderBlob = nullptr;
+    ID3DBlob* errorBlob = nullptr;
+    HRESULT hr = D3DCompileFromFile(srcFile, defines, D3D_COMPILE_STANDARD_FILE_INCLUDE,
+        entryPoint, profile,
+        flags, 0, &shaderBlob, &errorBlob);
+    if (FAILED(hr))
+    {
+        if (errorBlob)
+        {
+            OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+            errorBlob->Release();
+        }
+
+        if (shaderBlob)
+            shaderBlob->Release();
+
+        return hr;
+    }
+
+    *blob = shaderBlob;
+
+    return hr;
 }
 
 

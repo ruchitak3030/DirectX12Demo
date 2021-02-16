@@ -70,14 +70,17 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="Shaders\VertexShader.hlsl">
+    <None Include="packages.config" />
+    <None Include="Shaders\LightsHelper.hlsli">
       <Filter>Assets\Shaders</Filter>
-    </CustomBuild>
-    <CustomBuild Include="Shaders\PixelShader.hlsl">
-      <Filter>Assets\Shaders</Filter>
-    </CustomBuild>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <FxCompile Include="Shaders\VertexShader.hlsl">
+      <Filter>Assets\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PixelShader.hlsl">
+      <Filter>Assets\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

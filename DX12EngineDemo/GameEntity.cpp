@@ -21,11 +21,11 @@ GameEntity::GameEntity(Mesh* mesh)
 	
 }*/
 
-GameEntity::GameEntity(const std::string& filePath, ComPtr<ID3D12Device> device)
+GameEntity::GameEntity(const std::string& filePath, XMFLOAT3 position, ComPtr<ID3D12Device> device)
 {
 	m_device = device;
 	XMStoreFloat4x4(&m_worldMatrix, XMMatrixIdentity());
-	m_position = XMFLOAT3(0, 0, 0);
+	m_position = position;
 	m_rotation = XMFLOAT3(0, 0, 0);
 	m_scale = XMFLOAT3(1, 1, 1);
 	if (!this->LoadAssimpModel(filePath))

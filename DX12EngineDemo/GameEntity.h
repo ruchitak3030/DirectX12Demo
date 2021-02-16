@@ -7,7 +7,7 @@ public:
 
 	GameEntity(Mesh* mesh);
 	//GameEntity(const char* objFile, ComPtr<ID3D12Device> device);
-	GameEntity(const std::string& filePath, ComPtr<ID3D12Device> device);
+	GameEntity(const std::string& filePath, XMFLOAT3 position, ComPtr<ID3D12Device> device);
 	void Draw(ComPtr<ID3D12GraphicsCommandList> commandList);
 	~GameEntity();
 
@@ -19,6 +19,9 @@ public:
 	void SetPosition(float x, float y, float z) { m_position.x = x; m_position.y = y; m_position.z = z; }
 	void SetRotation(float x, float y, float z) { m_rotation.x = x; m_rotation.y = y; m_rotation.z = z; }
 	void SetScale(float x, float y, float z) { m_scale.x = x; m_scale.y = y, m_scale.z = z; }
+
+	// Getters
+	XMFLOAT3 GetPosition() { return m_position; }
 
 	Mesh* GetMesh() { return mesh; }
 	XMFLOAT4X4* GetWorldMatrix() { return &m_worldMatrix; }
